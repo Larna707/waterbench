@@ -216,6 +216,7 @@
   
   @media(max-width:900px){ .y-grid{ grid-template-columns:repeat(2,1fr); } }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -456,6 +457,57 @@
         </div>
       </div>
       <div id="icResult" class="iwad-result" style="margin-top:10px;display:none;"></div>
+
+    </div>
+  </div>
+
+  <!-- КПИ Dashboard Section -->
+  <div class="iwad-section" style="border-top:3px solid #c0392b;margin-top:8px;">
+    <div class="iwad-header" style="background:linear-gradient(135deg,#922b21,#c0392b);cursor:pointer;" onclick="toggleKPIDash()">
+      <h3>📊 КПИ Dashboard — КЕВР 2022–2025</h3>
+      <span id="kpiDashToggle">▼ Разгъни</span>
+    </div>
+    <div class="iwad-body" id="kpiDashBody" style="max-height:none;display:none;padding:16px;">
+
+      <!-- Selector -->
+      <div style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+        <label style="font-weight:700;color:#922b21;">Избери КПИ:</label>
+        <select id="kpiSelect" onchange="renderKPIDash()" style="padding:7px 12px;border:2px solid #c0392b;border-radius:8px;font-size:14px;font-weight:600;background:#fff;color:#1a1a2e;min-width:200px;">
+        </select>
+        <span id="kpiMeLabel" style="background:#f8d7da;color:#922b21;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:700;"></span>
+        <span id="kpiEpeLabel" style="padding:4px 10px;border-radius:12px;font-size:12px;font-weight:700;display:none;"></span>
+      </div>
+
+      <!-- Description -->
+      <div id="kpiDescBox" style="background:#fdf2f8;border-left:4px solid #c0392b;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:16px;font-size:13px;color:#4a4a6a;"></div>
+
+      <!-- Status cards -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;" id="kpiStatusCards"></div>
+
+      <!-- Charts -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px;">
+        <div style="background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+          <div style="font-size:13px;font-weight:700;color:#922b21;margin-bottom:10px;">📊 Отчет vs Разчет по години</div>
+          <canvas id="kpiBarChart" height="200"></canvas>
+        </div>
+        <div style="background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+          <div style="font-size:13px;font-weight:700;color:#922b21;margin-bottom:10px;">📈 Тренд на отчетните стойности</div>
+          <canvas id="kpiTrendChart" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- Summary donut -->
+      <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:8px;">
+        <div style="background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,0.08);text-align:center;">
+          <div style="font-size:13px;font-weight:700;color:#922b21;margin-bottom:10px;">🎯 Изпълнение 2022–2025</div>
+          <canvas id="kpiDonut" height="160"></canvas>
+          <div id="kpiDonutLabel" style="margin-top:8px;font-size:13px;font-weight:700;color:#333;"></div>
+        </div>
+        <div style="background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+          <div style="font-size:13px;font-weight:700;color:#922b21;margin-bottom:10px;">📋 Всички 30 КПИ — Статус 2024</div>
+          <div id="kpiAllTable" style="max-height:180px;overflow-y:auto;font-size:12px;"></div>
+        </div>
+      </div>
 
     </div>
   </div>
@@ -2713,6 +2765,142 @@ async function runICQuestion() {
 
 // ─── БП MODULE ────────────────────────────────────────────────
 let bpTab = 'pk';
+// ─── КПИ DASHBOARD ───────────────────────────────────────────
+const KPI_DATA = [{"kpi": "ПК1", "desc": "Ниво на покритие с водоснабдителни услуги", "me": "%", "epe": "Не", "posoka": "high", "r2022": 1.0, "o2022": 1.0, "s2022": "Изпълнен", "r2023": 1.0, "o2023": 1.0, "s2023": "Изпълнен", "r2024": 1.0, "o2024": 1.0, "s2024": "Изпълнен", "r2025": 1.0, "o2025": 1.0, "s2025": "Изпълнен"}, {"kpi": "ПК2а", "desc": "Качество на питейната вода в големи зони на водоснабдяване", "me": "%", "epe": "Да", "posoka": "high", "r2022": 0.9998, "o2022": 0.9998, "s2022": "Изпълнен", "r2023": 0.9998, "o2023": 0.9998, "s2023": "Изпълнен", "r2024": 0.9994, "o2024": 0.9995, "s2024": "Изпълнен", "r2025": 0.9994, "o2025": 0.9998, "s2025": "Изпълнен"}, {"kpi": "ПК2б", "desc": "Качество на питейната вода в малки зони на водоснабдяване", "me": "%", "epe": "Не", "posoka": "high", "r2022": 0.9875, "o2022": 0.9875, "s2022": "Изпълнен", "r2023": 0.9881, "o2023": 0.9881, "s2023": "Изпълнен", "r2024": 0.9846, "o2024": 0.9866, "s2024": "Изпълнен", "r2025": 0.9846, "o2025": 0.9877, "s2025": "Изпълнен"}, {"kpi": "ПК2в", "desc": "Мониторинг на качеството на питейната вода", "me": "%", "epe": "Не", "posoka": "high", "r2022": 1.0, "o2022": 1.0, "s2022": "Изпълнен", "r2023": 1.0, "o2023": 1.0, "s2023": "Изпълнен", "r2024": 1.0, "o2024": 1.0, "s2024": "Изпълнен", "r2025": 1.0, "o2025": 1.0, "s2025": "Изпълнен"}, {"kpi": "ПК3", "desc": "Непрекъснатост на водоснабдяването", "me": "ratio", "epe": "Не", "posoka": "low", "r2022": 1.086, "o2022": 1.086, "s2022": "Изпълнен", "r2023": 0.606, "o2023": 0.61, "s2023": "Неизпълнен", "r2024": 1.093, "o2024": 0.701, "s2024": "Изпълнен", "r2025": 1.086, "o2025": 0.572, "s2025": "Изпълнен"}, {"kpi": "ПК4а", "desc": "Общи загуби на вода ВС София", "me": "m3/km/day", "epe": "Да", "posoka": "low", "r2022": 37.6, "o2022": 36.51, "s2022": "Изпълнен", "r2023": 36.72, "o2023": 37.77, "s2023": "Неизпълнен", "r2024": 36.45, "o2024": 36.24, "s2024": "Изпълнен", "r2025": 33.19, "o2025": 35.62, "s2025": "Неизпълнен"}, {"kpi": "ПК4б", "desc": "Общи загуби на вода ВС София (%)", "me": "%", "epe": "Не", "posoka": "low", "r2022": 0.3927, "o2022": 0.3927, "s2022": "Изпълнен", "r2023": 0.3885, "o2023": 0.3937, "s2023": "Неизпълнен", "r2024": 0.3835, "o2024": 0.374, "s2024": "Изпълнен", "r2025": 0.3585, "o2025": 0.3684, "s2025": "Неизпълнен"}, {"kpi": "ПК5", "desc": "Аварии по водопроводната мрежа", "me": "бр/100км/год", "epe": "Не", "posoka": "low", "r2022": 87.1, "o2022": 87.11, "s2022": "Неизпълнен", "r2023": 83.64, "o2023": 87.29, "s2023": "Неизпълнен", "r2024": 80.17, "o2024": 96.47, "s2024": "Неизпълнен", "r2025": 76.71, "o2025": 94.59, "s2025": "Неизпълнен"}, {"kpi": "ПК6a", "desc": "Налягане във водоснабдителната система", "me": "%", "epe": "Да", "posoka": "high", "r2022": 0.9856, "o2022": 0.9856, "s2022": "Изпълнен", "r2023": 0.9858, "o2023": 0.9858, "s2023": "Изпълнен", "r2024": 0.9858, "o2024": 0.9907, "s2024": "Изпълнен", "r2025": 0.9858, "o2025": 0.9861, "s2025": "Изпълнен"}, {"kpi": "ПК7а", "desc": "Ниво на покритие с услуги по отвеждане", "me": "%", "epe": "Не", "posoka": "high", "r2022": 0.9092, "o2022": 0.9092, "s2022": "Изпълнен", "r2023": 0.9113, "o2023": 0.9077, "s2023": "Неизпълнен", "r2024": 0.9127, "o2024": 0.9937, "s2024": "Изпълнен", "r2025": 0.9141, "o2025": 0.9093, "s2025": "Неизпълнен"}, {"kpi": "ПК7б", "desc": "Ниво на покритие с услуги по пречистване", "me": "%", "epe": "Не", "posoka": "high", "r2022": 0.8949, "o2022": 0.8949, "s2022": "Изпълнен", "r2023": 0.8972, "o2023": 0.8932, "s2023": "Неизпълнен", "r2024": 0.8986, "o2024": 0.9781, "s2024": "Изпълнен", "r2025": 0.9, "o2025": 0.8952, "s2025": "Неизпълнен"}, {"kpi": "ПК8", "desc": "Качество на отпадъчните води", "me": "%", "epe": "Не", "posoka": "high", "r2022": 1.0, "o2022": 1.0, "s2022": "Изпълнен", "r2023": 1.0, "o2023": 1.0, "s2023": "Изпълнен", "r2024": 1.0, "o2024": 1.0, "s2024": "Изпълнен", "r2025": 1.0, "o2025": 1.0, "s2025": "Изпълнен"}, {"kpi": "ПК9", "desc": "Аварии на канализационната мрежа", "me": "бр/100км/год", "epe": "Не", "posoka": "low", "r2022": 86.59, "o2022": 86.59, "s2022": "Изпълнен", "r2023": 75.54, "o2023": 74.27, "s2023": "Изпълнен", "r2024": 83.27, "o2024": 75.17, "s2024": "Изпълнен", "r2025": 80.87, "o2025": 63.55, "s2025": "Изпълнен"}, {"kpi": "ПК10", "desc": "Наводнения в имоти на трети лица", "me": "бр/10 000 потр", "epe": "Не", "posoka": "low", "r2022": 0.028, "o2022": 0.028, "s2022": "Изпълнен", "r2023": 0.042, "o2023": 0.042, "s2023": "Изпълнен", "r2024": 0.138, "o2024": 0.014, "s2024": "Изпълнен", "r2025": 0.136, "o2025": 0.134, "s2025": "Изпълнен"}, {"kpi": "ПК11а", "desc": "Ен. ефективност — доставяне на вода", "me": "kWh/m3", "epe": "Не", "posoka": "low", "r2022": 0.043, "o2022": 0.045, "s2022": "Неизпълнен", "r2023": 0.052, "o2023": 0.051, "s2023": "Изпълнен", "r2024": 0.058, "o2024": 0.055, "s2024": "Изпълнен", "r2025": 0.052, "o2025": 0.04, "s2025": "Изпълнен"}, {"kpi": "ПК11б", "desc": "Ен. ефективност — пречистване", "me": "kWh/m3", "epe": "Не", "posoka": "high", "r2022": 0.168, "o2022": 0.168, "s2022": "Изпълнен", "r2023": 0.156, "o2023": 0.178, "s2023": "Изпълнен", "r2024": 0.173, "o2024": 0.202, "s2024": "Изпълнен", "r2025": 0.195, "o2025": 0.207, "s2025": "Изпълнен"}, {"kpi": "ПК11в", "desc": "Оползотворяване на утайките от ПСОВ", "me": "%", "epe": "Не", "posoka": "high", "r2022": 1.0, "o2022": 1.0, "s2022": "Изпълнен", "r2023": 1.0, "o2023": 1.0, "s2023": "Изпълнен", "r2024": 1.0, "o2024": 1.0, "s2024": "Изпълнен", "r2025": 1.0, "o2025": 1.0, "s2025": "Изпълнен"}, {"kpi": "ПК11г", "desc": "Рехабилитация на водопроводната мрежа", "me": "%", "epe": "Да", "posoka": "high", "r2022": 0.01, "o2022": 0.01, "s2022": "Изпълнен", "r2023": 0.0126, "o2023": 0.0129, "s2023": "Изпълнен", "r2024": 0.0027, "o2024": 0.0076, "s2024": "Изпълнен", "r2025": 0.0065, "o2025": 0.0044, "s2025": "Неизпълнен"}, {"kpi": "ПК11д", "desc": "Активен контрол на течовете", "me": "%", "epe": "Не", "posoka": "high", "r2022": 0.236, "o2022": 0.236, "s2022": "Изпълнен", "r2023": 0.2371, "o2023": 0.2471, "s2023": "Изпълнен", "r2024": 0.2379, "o2024": 0.2813, "s2024": "Изпълнен", "r2025": 0.239, "o2025": 0.2593, "s2025": "Изпълнен"}, {"kpi": "ПК12а", "desc": "Ефективност разходи — доставяне на вода", "me": "ratio", "epe": "Не", "posoka": "high", "r2022": 1.64, "o2022": 1.39, "s2022": "Неизпълнен", "r2023": 1.63, "o2023": 1.29, "s2023": "Неизпълнен", "r2024": 1.6, "o2024": 1.24, "s2024": "Неизпълнен", "r2025": 1.58, "o2025": 1.55, "s2025": "Неизпълнен"}, {"kpi": "ПК12б", "desc": "Ефективност разходи — отвеждане", "me": "ratio", "epe": "Не", "posoka": "high", "r2022": 2.33, "o2022": 2.37, "s2022": "Изпълнен", "r2023": 2.34, "o2023": 1.95, "s2023": "Неизпълнен", "r2024": 2.36, "o2024": 1.48, "s2024": "Неизпълнен", "r2025": 2.36, "o2025": 2.19, "s2025": "Неизпълнен"}, {"kpi": "ПК12в", "desc": "Ефективност разходи — пречистване", "me": "ratio", "epe": "Не", "posoka": "high", "r2022": 1.27, "o2022": 1.01, "s2022": "Неизпълнен", "r2023": 1.24, "o2023": 0.79, "s2023": "Неизпълнен", "r2024": 1.22, "o2024": 0.91, "s2024": "Неизпълнен", "r2025": 1.22, "o2025": 1.21, "s2025": "Неизпълнен"}, {"kpi": "ПК12г", "desc": "Събираемост", "me": "%", "epe": "Не", "posoka": "high", "r2022": 0.8393, "o2022": 0.8328, "s2022": "Неизпълнен", "r2023": 0.8557, "o2023": 0.8398, "s2023": "Неизпълнен", "r2024": 0.8684, "o2024": 0.8582, "s2024": "Неизпълнен", "r2025": 0.8768, "o2025": 0.8761, "s2025": "Неизпълнен"}, {"kpi": "ПК12д", "desc": "Ефективност привеждане водомери в годност", "me": "%", "epe": "Не", "posoka": "high", "r2022": 0.1673, "o2022": 0.1673, "s2022": "Изпълнен", "r2023": 0.2031, "o2023": 0.2031, "s2023": "Изпълнен", "r2024": 0.2, "o2024": 0.195, "s2024": "Неизпълнен", "r2025": 0.2085, "o2025": 0.2054, "s2025": "Неизпълнен"}, {"kpi": "ПК12е", "desc": "Ефективност изграждане водомерното стопанство", "me": "%", "epe": "Да", "posoka": "high", "r2022": 0.9225, "o2022": 0.9225, "s2022": "Изпълнен", "r2023": 0.9163, "o2023": 0.9163, "s2023": "Изпълнен", "r2024": 0.8905, "o2024": 0.9051, "s2024": "Изпълнен", "r2025": 0.8863, "o2025": 0.8824, "s2025": "Неизпълнен"}, {"kpi": "ПК13", "desc": "Срок за отговор на писмени жалби", "me": "%", "epe": "Не", "posoka": "high", "r2022": 1.0, "o2022": 1.0, "s2022": "Изпълнен", "r2023": 1.0, "o2023": 0.9858, "s2023": "Неизпълнен", "r2024": 1.0, "o2024": 0.8385, "s2024": "Неизпълнен", "r2025": 1.0, "o2025": 0.997, "s2025": "Неизпълнен"}, {"kpi": "ПК14а", "desc": "Присъединяване към ВС системата", "me": "%", "epe": "Не", "posoka": "high", "r2022": 0.9643, "o2022": 0.9643, "s2022": "Изпълнен", "r2023": 1.0, "o2023": 0.9369, "s2023": "Неизпълнен", "r2024": 1.0, "o2024": 1.0, "s2024": "Изпълнен", "r2025": 1.0, "o2025": 1.0, "s2025": "Изпълнен"}, {"kpi": "ПК14б", "desc": "Присъединяване към канализационната система", "me": "%", "epe": "Не", "posoka": "high", "r2022": 1.0, "o2022": 1.0, "s2022": "Изпълнен", "r2023": 1.0, "o2023": 1.0, "s2023": "Изпълнен", "r2024": 1.0, "o2024": 1.0, "s2024": "Изпълнен", "r2025": 1.0, "o2025": 1.0, "s2025": "Изпълнен"}, {"kpi": "ПК15а", "desc": "Ефективност персонала — доставяне на вода", "me": "бр/1000 СВО", "epe": "Не", "posoka": "low", "r2022": 5.54, "o2022": 4.97, "s2022": "Изпълнен", "r2023": 5.34, "o2023": 4.85, "s2023": "Изпълнен", "r2024": 5.33, "o2024": 5.35, "s2024": "Неизпълнен", "r2025": 5.32, "o2025": 5.22, "s2025": "Изпълнен"}, {"kpi": "ПК15б", "desc": "Ефективност персонала — отвеждане и пречистване", "me": "бр/1000 СКО", "epe": "Не", "posoka": "low", "r2022": 4.25, "o2022": 3.67, "s2022": "Изпълнен", "r2023": 4.42, "o2023": 3.99, "s2023": "Изпълнен", "r2024": 4.24, "o2024": 4.4, "s2024": "Неизпълнен", "r2025": 4.23, "o2025": 4.52, "s2025": "Неизпълнен"}];
+
+let kpiBarChartInst = null, kpiTrendChartInst = null, kpiDonutInst = null;
+
+function toggleKPIDash() {
+  const body = document.getElementById('kpiDashBody');
+  const toggle = document.getElementById('kpiDashToggle');
+  if (body.style.display === 'none') {
+    body.style.display = 'block';
+    toggle.textContent = '▲ Свий';
+    initKPIDash();
+  } else {
+    body.style.display = 'none';
+    toggle.textContent = '▼ Разгъни';
+  }
+}
+
+function initKPIDash() {
+  const sel = document.getElementById('kpiSelect');
+  if (sel.options.length > 0) return;
+  KPI_DATA.forEach(k => {
+    const opt = document.createElement('option');
+    opt.value = k.kpi;
+    opt.textContent = k.kpi + ' — ' + k.desc.substring(0, 45) + (k.desc.length > 45 ? '…' : '');
+    sel.appendChild(opt);
+  });
+  renderKPIDash();
+  renderKPIAllTable();
+}
+
+function fmtKPI(v, me) {
+  if (v === null || v === undefined) return '—';
+  if (me === '%' || me.includes('%')) return (v * 100).toFixed(2) + '%';
+  if (typeof v === 'number') return v % 1 === 0 ? v.toString() : v.toFixed(4);
+  return v;
+}
+
+function renderKPIDash() {
+  const sel = document.getElementById('kpiSelect');
+  const k = KPI_DATA.find(x => x.kpi === sel.value);
+  if (!k) return;
+
+  document.getElementById('kpiDescBox').textContent = k.desc;
+  document.getElementById('kpiMeLabel').textContent = 'МЕ: ' + k.me;
+
+  const epeEl = document.getElementById('kpiEpeLabel');
+  if (k.epe === 'Да') {
+    epeEl.style.display = 'inline';
+    epeEl.textContent = '⭐ ЕПЕ';
+    epeEl.style.background = '#fff3cd';
+    epeEl.style.color = '#856404';
+  } else {
+    epeEl.style.display = 'none';
+  }
+
+  // Status cards
+  const years = [{y:'2022',r:'r2022',o:'o2022',s:'s2022'},{y:'2023',r:'r2023',o:'o2023',s:'s2023'},{y:'2024',r:'r2024',o:'o2024',s:'s2024'},{y:'2025',r:'r2025',o:'o2025',s:'s2025'}];
+  const cardsEl = document.getElementById('kpiStatusCards');
+  cardsEl.innerHTML = years.map(({y,r,o,s}) => {
+    const izp = k[s] === 'Изпълнен';
+    const bg = izp ? '#d4edda' : '#f8d7da';
+    const col = izp ? '#155724' : '#721c24';
+    const icon = izp ? '✅' : '❌';
+    return `<div style="background:${bg};border-radius:10px;padding:12px;text-align:center;">
+      <div style="font-size:20px;">${icon}</div>
+      <div style="font-weight:800;font-size:16px;color:${col};">${y}</div>
+      <div style="font-size:11px;color:#555;margin-top:4px;">Разч: <b>${fmtKPI(k[r],k.me)}</b></div>
+      <div style="font-size:11px;color:#555;">Отч: <b>${fmtKPI(k[o],k.me)}</b></div>
+      <div style="font-size:12px;font-weight:700;color:${col};margin-top:4px;">${k[s]}</div>
+    </div>`;
+  }).join('');
+
+  // Bar chart
+  if (kpiBarChartInst) kpiBarChartInst.destroy();
+  const barCtx = document.getElementById('kpiBarChart').getContext('2d');
+  kpiBarChartInst = new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: ['2022','2023','2024','2025'],
+      datasets: [
+        {label:'Отчет',data:[k.o2022,k.o2023,k.o2024,k.o2025],backgroundColor:'rgba(41,128,185,0.8)',borderRadius:4},
+        {label:'Разчет',data:[k.r2022,k.r2023,k.r2024,k.r2025],backgroundColor:'rgba(230,126,34,0.8)',borderRadius:4}
+      ]
+    },
+    options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11}}}},scales:{y:{ticks:{font:{size:10}}}}}
+  });
+
+  // Trend chart
+  if (kpiTrendChartInst) kpiTrendChartInst.destroy();
+  const trendCtx = document.getElementById('kpiTrendChart').getContext('2d');
+  kpiTrendChartInst = new Chart(trendCtx, {
+    type: 'line',
+    data: {
+      labels: ['2022','2023','2024','2025'],
+      datasets: [
+        {label:'Отчет',data:[k.o2022,k.o2023,k.o2024,k.o2025],borderColor:'#2980b9',backgroundColor:'rgba(41,128,185,0.1)',tension:0.3,fill:true,pointRadius:5,pointBackgroundColor:'#2980b9'},
+        {label:'Разчет',data:[k.r2022,k.r2023,k.r2024,k.r2025],borderColor:'#e67e22',borderDash:[5,5],tension:0.3,pointRadius:4,pointBackgroundColor:'#e67e22'}
+      ]
+    },
+    options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11}}}},scales:{y:{ticks:{font:{size:10}}}}}
+  });
+
+  // Donut
+  const statuses = [k.s2022,k.s2023,k.s2024,k.s2025];
+  const izp = statuses.filter(s=>s==='Изпълнен').length;
+  const nizp = 4 - izp;
+  if (kpiDonutInst) kpiDonutInst.destroy();
+  const doCtx = document.getElementById('kpiDonut').getContext('2d');
+  kpiDonutInst = new Chart(doCtx, {
+    type:'doughnut',
+    data:{labels:['Изпълнен','Неизпълнен'],datasets:[{data:[izp,nizp],backgroundColor:['#27ae60','#e74c3c'],borderWidth:2}]},
+    options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:11}}}}}
+  });
+  document.getElementById('kpiDonutLabel').textContent = izp + '/4 години изпълнени';
+}
+
+function renderKPIAllTable() {
+  const el = document.getElementById('kpiAllTable');
+  let html = '<table style="width:100%;border-collapse:collapse;">';
+  html += '<tr style="background:#f5f5f5;"><th style="padding:4px 8px;text-align:left;font-size:11px;">КПИ</th><th style="padding:4px 8px;font-size:11px;">Разч.2024</th><th style="padding:4px 8px;font-size:11px;">Отч.2024</th><th style="padding:4px 8px;font-size:11px;">Статус</th></tr>';
+  KPI_DATA.forEach(k => {
+    const izp = k.s2024 === 'Изпълнен';
+    const col = izp ? '#155724' : '#721c24';
+    const bg = izp ? '#f0fff4' : '#fff5f5';
+    html += `<tr style="background:${bg};border-bottom:1px solid #eee;">
+      <td style="padding:4px 8px;font-size:11px;font-weight:700;">${k.kpi}</td>
+      <td style="padding:4px 8px;font-size:11px;text-align:center;">${fmtKPI(k.r2024,k.me)}</td>
+      <td style="padding:4px 8px;font-size:11px;text-align:center;">${fmtKPI(k.o2024,k.me)}</td>
+      <td style="padding:4px 8px;font-size:11px;font-weight:700;color:${col};text-align:center;">${izp?'✅':'❌'}</td>
+    </tr>`;
+  });
+  html += '</table>';
+  el.innerHTML = html;
+}
+
 let bpGroup = 'all';
 
 function toggleBP() {
