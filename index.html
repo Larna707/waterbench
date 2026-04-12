@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WaterBench — Regulatory Reporting Copilot</title>
+<title>WaterBench — Regulatory Reporting Agent</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; color: #1a2b3c; }
@@ -81,7 +81,7 @@
 <div class="header">
   <div class="header-logo">💧</div>
   <div>
-    <h1>WaterBench — Regulatory Reporting Copilot</h1>
+    <h1>WaterBench — Regulatory Reporting Agent</h1>
     <p>Sofiyska Voda AD · КЕВР Показатели за качество · AI Анализ и Обосновки</p>
   </div>
 </div>
@@ -98,8 +98,8 @@
   <!-- Summary row -->
   <div class="summary-bar">
     <div class="stat-card ok"><div class="stat-val" id="statOk">—</div><div class="stat-lbl">✅ Изпълняват целта</div></div>
-    <div class="stat-card warn"><div class="stat-val" id="statWarn">—</div><div class="stat-lbl">⚠️ Близо до целта</div></div>
-    <div class="stat-card bad"><div class="stat-val" id="statBad">—</div><div class="stat-lbl">❌ Под целта</div></div>
+    
+    <div class="stat-card bad"><div class="stat-val" id="statBad">—</div><div class="stat-lbl">❌ Неизпълнени</div></div>
     <div class="stat-card"><div class="stat-val" id="statTotal">30</div><div class="stat-lbl">📊 Общо КПИ</div></div>
   </div>
 
@@ -116,7 +116,7 @@
             <th style="color:#1565c0;">Отч. 2025</th>
             
             <th>Статус</th>
-            <th>Тренд</th>
+            <th>Тренд 2022→2025</th>
           </tr>
         </thead>
         <tbody id="kpiBody"></tbody>
@@ -126,7 +126,7 @@
 
   <!-- AI Agent Panel -->
   <div class="card">
-    <div class="card-title">🤖 AI Copilot — Генериране на обосновки</div>
+    <div class="card-title">🤖 AI Agent — Генериране на обосновки</div>
     <div class="agent-panel">
 
       <div class="selected-kpi" id="selectedInfo">
@@ -168,21 +168,16 @@ const KPI_DATA = [{"pk":"ПК1","desc":"Ниво на покритие с вод
 let selectedKPI = null;
 
 function getStatus(kpi, year) {
-  // year: '2024' compares v2024 vs cel2031; '2025' compares o2025 vs r2025
   if (year === '2025') {
-    if (!kpi.o2025 || !kpi.r2025) return 'warn';
+    if (!kpi.o2025 || !kpi.r2025) return 'bad';
     const v = kpi.o2025, c = kpi.r2025;
     const pct = kpi.posoka === 'down' ? (c / v) : (v / c);
-    if (pct >= 1.0) return 'ok';
-    if (pct >= 0.9) return 'warn';
-    return 'bad';
+    return pct >= 1.0 ? 'ok' : 'bad';
   }
-  if (!kpi.v2024 || !kpi.cel2031) return 'warn';
+  if (!kpi.v2024 || !kpi.cel2031) return 'bad';
   const v = kpi.v2024, c = kpi.cel2031;
   const pct = kpi.posoka === 'down' ? (c / v) : (v / c);
-  if (pct >= 1.0) return 'ok';
-  if (pct >= 0.9) return 'warn';
-  return 'bad';
+  return pct >= 1.0 ? 'ok' : 'bad';
 }
 
 function formatVal(v, unit) {
@@ -192,8 +187,8 @@ function formatVal(v, unit) {
 }
 
 function getTrend(kpi) {
-  if (!kpi.v2022 || !kpi.v2024) return '<span class="trend trend-flat">—</span>';
-  const change = kpi.v2024 - kpi.v2022;
+  if (!kpi.v2022 || !kpi.o2025) return '<span class="trend trend-flat">—</span>';
+  const change = kpi.o2025 - kpi.v2022;
   const pct = Math.abs(change / kpi.v2022 * 100).toFixed(1);
   const isGood = kpi.posoka === 'down' ? change < 0 : change > 0;
   const arrow = change > 0 ? '↑' : '↓';
@@ -203,13 +198,13 @@ function getTrend(kpi) {
 
 function buildTable() {
   const tbody = document.getElementById('kpiBody');
-  let ok=0, warn=0, bad=0;
+  let ok=0, bad=0;
   
   tbody.innerHTML = KPI_DATA.map(kpi => {
     const st = getStatus(kpi, '2025');
-    if(st==='ok') ok++; else if(st==='warn') warn++; else bad++;
-    const badge = st==='ok' ? 'badge-ok' : st==='warn' ? 'badge-warn' : 'badge-bad';
-    const label = st==='ok' ? '✅ Изпълнена' : st==='warn' ? '⚠️ Близо' : '❌ Под целта';
+    if(st==='ok') ok++; else bad++;
+    const badge = st==='ok' ? 'badge-ok' : 'badge-bad';
+    const label = st==='ok' ? '✅ Изпълнен' : '❌ Неизпълнен';
     return `<tr onclick="selectKPI('${kpi.pk}')" id="row_${kpi.pk}">
       <td><strong>${kpi.pk}</strong></td>
       <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${kpi.desc}">${kpi.desc}</td>
@@ -221,7 +216,6 @@ function buildTable() {
   }).join('');
 
   document.getElementById('statOk').textContent = ok;
-  document.getElementById('statWarn').textContent = warn;
   document.getElementById('statBad').textContent = bad;
 }
 
@@ -232,7 +226,7 @@ function selectKPI(pk) {
 
   const kpi = selectedKPI;
   const st = getStatus(kpi, '2025');
-  const stLabel = st==='ok' ? '✅ Изпълнен 2025' : st==='warn' ? '⚠️ Близо до разчета' : '❌ Неизпълнен 2025';
+  const stLabel = st==='ok' ? '✅ Изпълнен 2025' : '❌ Неизпълнен 2025';
 
   document.getElementById('selectedInfo').innerHTML = `
     <strong>${kpi.pk} — ${kpi.desc}</strong>
