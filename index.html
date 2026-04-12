@@ -188,8 +188,7 @@ function getStatus(kpi, year) {
 function formatVal(v, unit) {
   if (v === null || v === undefined) return '—';
   if (unit === '%') return (v * 100).toFixed(2) + '%';
-  if (Number.isInteger(v)) return v.toString();
-  return v.toFixed(4).replace(/\.?0+$/, '');
+  return v.toFixed(2);
 }
 
 function getTrend(kpi) {
