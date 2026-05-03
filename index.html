@@ -336,7 +336,6 @@
       <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center;flex-wrap:wrap;">
         <span style="font-size:12px;font-weight:600;color:#1a5276;">Година на доклада:</span>
         <div style="display:flex;gap:6px;">
-          <button class="iwad-type-tab" id="yearBtn2025" onclick="setIWADYear(2025)">2025</button>
           <button class="iwad-type-tab active" id="yearBtn2024" onclick="setIWADYear(2024)">2024</button>
           <button class="iwad-type-tab" id="yearBtn2023" onclick="setIWADYear(2023)">2023</button>
         </div>
@@ -582,7 +581,7 @@
   <!-- БАВ Данни Section -->
   <div class="iwad-section" style="border-top:3px solid #6c3483;">
     <div class="iwad-header" style="background:linear-gradient(135deg,#6c3483,#8e44ad);" onclick="toggleBAV()">
-      <h3>📈 IWAD/БАВ — Показатели по години (2022–2024)</h3>
+      <h3>📈 IWAD/БАВ — Показатели по години (2022–2025)</h3>
       <span id="bavToggle">▼ Разгъни</span>
     </div>
     <div class="iwad-body" id="bavBody">
@@ -624,8 +623,8 @@
               <th style="padding:7px 10px;text-align:center;white-space:nowrap;cursor:pointer;" onclick="sortBAV('y2022')">2022 ↕</th>
               <th style="padding:7px 10px;text-align:center;white-space:nowrap;cursor:pointer;" onclick="sortBAV('y2023')">2023 ↕</th>
               <th style="padding:7px 10px;text-align:center;white-space:nowrap;cursor:pointer;" onclick="sortBAV('y2024')">2024 ↕</th>
-              <th style="padding:7px 10px;text-align:center;white-space:nowrap;cursor:pointer;background:#f0fdf4;" onclick="sortBAV('y2025')">2025 ↕</th>
-              <th style="padding:7px 10px;text-align:center;white-space:nowrap;cursor:pointer;" onclick="sortBAV('trend')">Тренд 2022→2025 ↕</th>
+              <th style="padding:7px 10px;text-align:center;white-space:nowrap;cursor:pointer;" onclick="sortBAV('y2025')">2025 ↕</th>
+              <th style="padding:7px 10px;text-align:center;white-space:nowrap;cursor:pointer;" onclick="sortBAV('trend')">Тренд 2024→2025 ↕</th>
             </tr>
           </thead>
           <tbody id="bavTableBody"></tbody>
@@ -2335,7 +2334,7 @@ function setIWADType(type) {
 
 function setIWADYear(year) {
   iwadYear = year;
-  [2023, 2024, 2025].forEach(y => {
+  [2023, 2024].forEach(y => {
     const btn = document.getElementById('yearBtn' + y);
     if (btn) btn.classList.toggle('active', y === year);
   });
@@ -3387,7 +3386,6 @@ function sortAndRenderBAV() {
     const v25 = formatBavVal(r.y2025);
     // Highlight changes
     let bg = '';
-    const n23 = parseFloat(String(r.y2023).replace(/,/g,'.'));
     const n24 = parseFloat(String(r.y2024).replace(/,/g,'.'));
     const n25 = parseFloat(String(r.y2025).replace(/,/g,'.'));
     if (!isNaN(n24) && !isNaN(n25) && n24 !== 0) {
@@ -3416,8 +3414,8 @@ function sortAndRenderBAV() {
       '<td style="padding:4px 6px;text-align:center;color:#888;font-size:10px;white-space:nowrap;max-width:55px;overflow:hidden;text-overflow:ellipsis;" title="' + (r.unit||'') + '">' + fmtBavUnit(r.unit||'') + '</td>' +
       '<td style="padding:4px 8px;text-align:right;font-family:monospace;">' + v22 + '</td>' +
       '<td style="padding:4px 8px;text-align:right;font-family:monospace;">' + v23 + '</td>' +
-      '<td style="padding:4px 8px;text-align:right;font-family:monospace;">' + v24 + '</td>' +
-      '<td style="padding:4px 8px;text-align:right;font-family:monospace;font-weight:600;background:#f0fdf4;">' + v25 + '</td>' +
+      '<td style="padding:4px 8px;text-align:right;font-family:monospace;font-weight:600;">' + v24 + '</td>' +
+      '<td style="padding:4px 8px;text-align:right;font-family:monospace;font-weight:600;">' + v25 + '</td>' +
       trendCell +
       '</tr>';
   }).join('');
@@ -3444,11 +3442,11 @@ async function runBAVQuestion() {
 
   // Build compact text from filtered data (or all if no filter)
   const dataRows = (bavFiltered.length > 0 ? bavFiltered : BAV_DATA)
-    .filter(r => r.y2022 || r.y2023 || r.y2024 || r.y2025)
-    .map(r => r.code + ' | ' + r.bg.slice(0,50) + ' | ' + (r.unit||'') + ' | 2022:' + (r.y2022||'—') + ' | 2023:' + (r.y2023||'—') + ' | 2024:' + (r.y2024||'—') + ' | 2025:' + (r.y2025||'—'))
+    .filter(r => r.y2022 || r.y2023 || r.y2024)
+    .map(r => r.code + ' | ' + r.bg.slice(0,50) + ' | ' + (r.unit||'') + ' | 2022:' + (r.y2022||'—') + ' | 2023:' + (r.y2023||'—') + ' | 2024:' + (r.y2024||'—'))
     .join('\n');
 
-  const prompt = 'IWAD/БАВ ДАННИ НА СОФИЙСКА ВОДА АД (2022-2025):\n\n' + dataRows + '\n\nВЪПРОС: ' + q;
+  const prompt = 'IWAD/БАВ ДАННИ НА СОФИЙСКА ВОДА АД (2022-2024):\n\n' + dataRows + '\n\nВЪПРОС: ' + q;
 
   try {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
