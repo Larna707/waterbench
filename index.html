@@ -244,7 +244,7 @@
   <button class="mode-btn" id="btnMonthly" onclick="setMode('monthly')">📅 Месечен</button>
 
   <div id="yearMonthCtrl" style="display:flex;align-items:center;gap:8px;">
-    <select class="year-select" id="yearSelect" onchange="updateView()">
+    <select class="year-select" id="yearSelect" onchange="mode === 'monthly' ? onMonthChange() : updateView()">
       <option value="2024">2024</option>
       <option value="2025" selected>2025</option>
       <option value="2026">2026</option>
@@ -253,8 +253,8 @@
       <select class="year-select" id="monthSelect" onchange="onMonthChange()">
         <option value="1">Януари</option><option value="2">Февруари</option>
         <option value="3">Март</option><option value="4">Април</option>
-        <option value="5">Май</option><option value="6" selected>Юни</option>
-        <option value="7">Юли</option><option value="8">Август</option>
+        <option value="5">Май</option><option value="6">Юни</option>
+        <option value="7">Юли</option><option value="8" selected>Август</option>
         <option value="9">Септември</option><option value="10">Октомври</option>
         <option value="11">Ноември</option><option value="12">Декември</option>
       </select>
@@ -1763,6 +1763,70 @@ const MONTHLY_2026 = {
     "ПК15а":{bp_a:5.31,bp_m:null,otch:5.229655,ic2026:5.2},
     "ПК15б":{bp_a:4.17,bp_m:null,otch:4.60283,ic2026:3.9},
   }},
+  7: { label:"Юли 2026", kpis: {
+    "ПК1":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:0.99},
+    "ПК2а":{bp_a:0.9994,bp_m:null,otch:0.9988,ic2026:0.99},
+    "ПК2б":{bp_a:0.9846,bp_m:null,otch:0.982249,ic2026:0.98},
+    "ПК2в":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:1.0},
+    "ПК3":{bp_a:1.086,bp_m:null,otch:0.569455,ic2026:8.0},
+    "ПК4а":{bp_a:29.61,bp_m:null,otch:30.243211,ic2026:28.72},
+    "ПК4б":{bp_a:0.3329,bp_m:null,otch:0.330084,ic2026:0.3329},
+    "ПК5":{bp_a:73.24,bp_m:42.723333,otch:29.953946,ic2026:73.24},
+    "ПК6a":{bp_a:0.986,bp_m:null,otch:0.99537,ic2026:0.9524},
+    "ПК7а":{bp_a:0.9155,bp_m:null,otch:1.013492,ic2026:0.75},
+    "ПК7б":{bp_a:0.9014,bp_m:null,otch:0.997968,ic2026:0.75},
+    "ПК8":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:0.93},
+    "ПК9":{bp_a:78.56,bp_m:45.826667,otch:44.077653,ic2026:85.27},
+    "ПК10":{bp_a:0.093,bp_m:null,otch:0.039471,ic2026:0.5},
+    "ПК11а":{bp_a:0.055,bp_m:null,otch:0.036913,ic2026:0.055},
+    "ПК11б":{bp_a:0.218,bp_m:null,otch:0.18307,ic2026:0.22},
+    "ПК11в":{bp_a:1.0,bp_m:0.583333,otch:0.532964,ic2026:1.0},
+    "ПК11г":{bp_a:0.0069,bp_m:0.004025,otch:0.003023,ic2026:0.0069},
+    "ПК11д":{bp_a:0.24,bp_m:0.14,otch:0.168163,ic2026:0.0125},
+    "ПК12а":{bp_a:1.57,bp_m:null,otch:null,ic2026:1.1},
+    "ПК12б":{bp_a:2.37,bp_m:null,otch:null,ic2026:1.1},
+    "ПК12в":{bp_a:1.21,bp_m:null,otch:null,ic2026:1.1},
+    "ПК12г":{bp_a:0.8848,bp_m:null,otch:0.869353,ic2026:0.8848},
+    "ПК12д":{bp_a:0.201,bp_m:0.11725,otch:0.12992,ic2026:0.201},
+    "ПК12е":{bp_a:0.8962,bp_m:null,otch:0.856253,ic2026:0.8947},
+    "ПК13":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:1.0},
+    "ПК14а":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:1.0},
+    "ПК14б":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:1.0},
+    "ПК15а":{bp_a:5.31,bp_m:null,otch:5.22863,ic2026:5.2},
+    "ПК15б":{bp_a:4.17,bp_m:null,otch:4.602221,ic2026:3.9},
+  }},
+  8: { label:"Август 2026", kpis: {
+    "ПК1":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:0.99},
+    "ПК2а":{bp_a:0.9994,bp_m:null,otch:0.998782,ic2026:0.99},
+    "ПК2б":{bp_a:0.9846,bp_m:null,otch:0.983003,ic2026:0.98},
+    "ПК2в":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:1.0},
+    "ПК3":{bp_a:1.086,bp_m:null,otch:0.583938,ic2026:8.0},
+    "ПК4а":{bp_a:29.61,bp_m:null,otch:30.293065,ic2026:28.72},
+    "ПК4б":{bp_a:0.3329,bp_m:null,otch:0.32979,ic2026:0.3329},
+    "ПК5":{bp_a:73.24,bp_m:48.826667,otch:49.072619,ic2026:73.24},
+    "ПК6a":{bp_a:0.986,bp_m:null,otch:0.990741,ic2026:0.9524},
+    "ПК7а":{bp_a:0.9155,bp_m:null,otch:1.014972,ic2026:0.75},
+    "ПК7б":{bp_a:0.9014,bp_m:null,otch:0.999444,ic2026:0.75},
+    "ПК8":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:0.93},
+    "ПК9":{bp_a:78.56,bp_m:52.373333,otch:46.84691,ic2026:85.27},
+    "ПК10":{bp_a:0.093,bp_m:null,otch:0.03943,ic2026:0.5},
+    "ПК11а":{bp_a:0.055,bp_m:null,otch:0.041443,ic2026:0.055},
+    "ПК11б":{bp_a:0.218,bp_m:null,otch:0.210505,ic2026:0.22},
+    "ПК11в":{bp_a:1.0,bp_m:0.666667,otch:0.532964,ic2026:1.0},
+    "ПК11г":{bp_a:0.0069,bp_m:0.0046,otch:0.004744,ic2026:0.0069},
+    "ПК11д":{bp_a:0.24,bp_m:0.16,otch:0.190175,ic2026:0.0125},
+    "ПК12а":{bp_a:1.57,bp_m:null,otch:null,ic2026:1.1},
+    "ПК12б":{bp_a:2.37,bp_m:null,otch:null,ic2026:1.1},
+    "ПК12в":{bp_a:1.21,bp_m:null,otch:null,ic2026:1.1},
+    "ПК12г":{bp_a:0.8848,bp_m:null,otch:0.865851,ic2026:0.8848},
+    "ПК12д":{bp_a:0.201,bp_m:0.134,otch:0.148535,ic2026:0.201},
+    "ПК12е":{bp_a:0.8962,bp_m:null,otch:0.904613,ic2026:0.8947},
+    "ПК13":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:1.0},
+    "ПК14а":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:1.0},
+    "ПК14б":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:1.0},
+    "ПК15а":{bp_a:5.31,bp_m:null,otch:5.221661,ic2026:5.2},
+    "ПК15б":{bp_a:4.17,bp_m:null,otch:4.597103,ic2026:3.9},
+  }},
 };
 
 
@@ -1978,7 +2042,7 @@ function selectKPI(pk) {
     const bpLbl = mdata.bp_m !== null ? 'БП (кум. 11м)' : 'БП годишен';
     html += `
       <div class="kpi-detail ref"><div class="val">${fv(bp, kpi.unit, kpi.pk)}</div><div class="lbl">${bpLbl}</div></div>
-      <div class="kpi-detail hl" ><div class="val">${fv(mdata.otch, kpi.unit, kpi.pk)}</div><div class="lbl">Отчет Ное. 2025</div></div>
+      <div class="kpi-detail hl" ><div class="val">${fv(mdata.otch, kpi.unit, kpi.pk)}</div><div class="lbl">Отчет ${document.getElementById('monthSelect').selectedOptions[0].text} ${year}</div></div>
       <div class="kpi-detail tgt"><div class="val">${fv(mdata.ic2026, kpi.unit, kpi.pk)}</div><div class="lbl">ИЦ 2026</div></div>
       <div class="kpi-detail"    ><div class="val">${fv(kpi.o24, kpi.unit, kpi.pk)}</div><div class="lbl">Отчет 2024</div></div>
       <div class="kpi-detail"    ><div class="val">${fv(kpi.r25, kpi.unit, kpi.pk)}</div><div class="lbl">БП год. 2025</div></div>
@@ -2074,9 +2138,9 @@ function buildPrompt(kpi, type) {
     const dev = md.otch !== null && bp ? ((md.otch-bp)/bp*100).toFixed(1) : null;
     ctx += `
 
-МЕСЕЧНИ ДАННИ — Ноември 2025:
+МЕСЕЧНИ ДАННИ — ${mdata_src.label}:
   ${bpType}: ${fv(bp,kpi.unit)}
-  Отчет Ноември 2025: ${fv(md.otch,kpi.unit)}${dev ? ('\n  Отклонение: ' + dev + '%') : ''}
+  Отчет ${mdata_src.label}: ${fv(md.otch,kpi.unit)}${dev ? ('\n  Отклонение: ' + dev + '%') : ''}
   ${kpi.cumulative?'ВАЖНО: Кумулативен показател — сравни натрупаното изпълнение с натрупания БП за 11 месеца.':''}`;
   }
 
