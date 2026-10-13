@@ -217,6 +217,7 @@
   @media(max-width:900px){ .y-grid{ grid-template-columns:repeat(2,1fr); } }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>@media print{body.print-exec > *:not(.main){display:none !important;} body.print-exec .main > *:not(#execSummary){display:none !important;} body.print-exec .no-print{display:none !important;}}</style>
 </head>
 <body>
 
@@ -244,11 +245,7 @@
   <button class="mode-btn" id="btnMonthly" onclick="setMode('monthly')">📅 Месечен</button>
 
   <div id="yearMonthCtrl" style="display:flex;align-items:center;gap:8px;">
-    <select class="year-select" id="yearSelect" onchange="mode === 'monthly' ? onMonthChange() : updateView()">
-      <option value="2024">2024</option>
-      <option value="2025" selected>2025</option>
-      <option value="2026">2026</option>
-    </select>
+    <select class="year-select" id="yearSelect" onchange="onYearChange()"><option value="2022">2022</option><option value="2023">2023</option><option value="2024">2024</option><option value="2025" selected>2025</option></select>
     <div class="month-selector" id="monthSelector">
       <select class="year-select" id="monthSelect" onchange="onMonthChange()">
         <option value="1">Януари</option><option value="2">Февруари</option>
@@ -263,6 +260,15 @@
 </div>
 
 <div class="main">
+  <div id="execSummary" class="card" style="border-left:5px solid #1a5276;grid-column:1/-1;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+      <div style="font-size:16px;font-weight:800;color:#1a5276;">Резюме за ръководството</div>
+      <div class="no-print"><span id="execMsg" style="font-size:12px;color:#1e8449;margin-right:8px;"></span>
+        <button onclick="execCopy()" style="padding:5px 12px;border:1px solid #1a5276;background:#fff;color:#1a5276;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Копирай текста</button>
+        <button onclick="execPrint()" style="padding:5px 12px;border:1px solid #1a5276;background:#1a5276;color:#fff;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;margin-left:6px;">Печат / PDF</button></div>
+    </div>
+    <div id="execBody" style="font-size:13px;line-height:1.5;"></div>
+  </div>
   <div class="summary-bar">
     <div class="stat-card ok" ><div class="stat-val" id="sOk" >—</div><div class="stat-lbl">✅ Изпълнени</div></div>
     <div class="stat-card bad" ><div class="stat-val" id="sBad" >—</div><div class="stat-lbl">❌ Неизпълнени</div></div>
@@ -271,7 +277,7 @@
   </div>
   <!-- EPE Bar -->
   <div class="epe-bar" id="epeBar">
-    <div class="epe-title">⚡ Единни показатели за ефективност <span class="epe-note">Влияят върху корекцията на цената на водата (±0.5% / показател)</span></div>
+    <div class="epe-title">⚡ Единни показатели за ефективност <span class="epe-note">Влияят върху коефициента Y и цената (от −0,5% до +1,0% на показател)</span></div>
     <div class="epe-cards" id="epeCards"></div>
   </div>
 
@@ -288,6 +294,7 @@
   <div class="card">
     <div class="card-title">🤖 AI Agent — Обосновки</div>
     <div class="agent-panel">
+    <div id="kpiAnalysis" style="background:#fffaf0;border-left:4px solid #e67e22;border-radius:8px;padding:12px 14px;margin-top:12px;font-size:13px;line-height:1.5;"></div>
       <div class="selected-kpi" id="selectedInfo">
         <strong>Изберете показател от таблицата вляво</strong><br>
         <span style="color:#555;font-size:12px;">Кликнете върху ред за детайли и генериране на обосновка</span>
@@ -440,6 +447,7 @@
       </div>
 
       <!-- Table -->
+      <div id="icAnalysis" style="background:#fffaf0;border-left:4px solid #e67e22;border-radius:8px;padding:12px 14px;margin:0 0 12px;font-size:13px;line-height:1.5;"></div>
       <div style="overflow-x:auto;border:1px solid #a2d9ce;border-radius:8px;max-height:1200px;overflow-y:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:12px;" id="icTable">
           <thead id="icThead" style="position:sticky;top:0;z-index:2;"></thead>
@@ -482,6 +490,57 @@
       <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
         <canvas id="trendMainChart" height="120"></canvas>
       </div>
+<div id="trendAnalysis" style="background:#fffaf0;border-left:4px solid #e67e22;border-radius:8px;padding:12px 14px;margin-top:12px;font-size:13px;line-height:1.5;"></div>
+      <!-- КОРЕЛАЦИИ -->
+      <div id="corrPanel" style="margin-top:20px;border-top:2px solid #d5f5e3;padding-top:16px;">
+        <h4 style="color:#1a6b3c;font-size:15px;margin-bottom:4px;">Връзки между показателите (корелации)</h4>
+        <p style="font-size:12px;color:#555;margin-bottom:12px;">Избери две редици и виж как се движат заедно през годините. Корелацията показва дали се движат в една посока, но не доказва, че едната причинява другата.</p>
+        <div id="corrPresets" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">
+          <div><label style="font-weight:700;color:#1a5276;font-size:12px;">Редица А (лява ос)</label>
+            <select id="corrA" onchange="corrManual()" style="width:100%;padding:7px;border:2px solid #1a5276;border-radius:8px;font-size:13px;"></select></div>
+          <div><label style="font-weight:700;color:#c0392b;font-size:12px;">Редица Б (дясна ос)</label>
+            <select id="corrB" onchange="corrManual()" style="width:100%;padding:7px;border:2px solid #c0392b;border-radius:8px;font-size:13px;"></select></div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:12px;">
+          <input id="corrFilter" oninput="filterCorrLists()" placeholder="Търси в списъците (напр. аварии, инвестиции, цена)" style="flex:1;min-width:220px;padding:7px 10px;border:1px solid #bbb;border-radius:8px;font-size:13px;">
+          <label style="font-size:12px;font-weight:600;">Сравнение:
+            <select id="corrMode" onchange="renderCorr()" style="padding:6px;border-radius:6px;border:1px solid #bbb;">
+              <option value="level">Стойности</option>
+              <option value="yoy">Годишна промяна (%)</option>
+            </select></label>
+          <label style="font-size:12px;font-weight:600;">Валута на сумите:
+            <select id="corrCur" onchange="corrCurChange()" style="padding:6px;border-radius:6px;border:1px solid #bbb;">
+              <option value="bgn">лв.</option><option value="eur">евро</option>
+            </select></label>
+          <label style="font-size:12px;font-weight:600;">Закъснение на Б спрямо А:
+            <select id="corrLag" onchange="renderCorr()" style="padding:6px;border-radius:6px;border:1px solid #bbb;">
+              <option value="0">0 г.</option><option value="1">1 г.</option><option value="2">2 г.</option><option value="3">3 г.</option>
+            </select></label>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:12px;">
+          <label style="font-size:12px;font-weight:600;">Период, от:
+            <select id="corrFrom" onchange="renderCorr(true)" style="padding:6px;border-radius:6px;border:1px solid #bbb;"></select></label>
+          <label style="font-size:12px;font-weight:600;">до:
+            <select id="corrTo" onchange="renderCorr(true)" style="padding:6px;border-radius:6px;border:1px solid #bbb;"></select></label>
+          <span style="font-size:11px;color:#777;">Периодът се нагласява автоматично към общите години на двете редици, когато смениш редица; след това можеш да го промениш.</span>
+        </div>
+        <div id="corrResult" style="background:#f4faf6;border-left:4px solid #27ae60;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;"></div>
+        <div id="corrAnalysis" style="background:#fffaf0;border-left:4px solid #e67e22;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.5;"></div>
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <button id="corrTabBtn_line" onclick="corrSetTab('line')" style="padding:7px 16px;border:1px solid #1a6b3c;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:#1a6b3c;color:#fff;">Графика по години</button>
+          <button id="corrTabBtn_scatter" onclick="corrSetTab('scatter')" style="padding:7px 16px;border:1px solid #1a6b3c;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:#1a6b3c;">Диаграма на разсейване</button>
+          <button id="corrTabBtn_table" onclick="corrSetTab('table')" style="padding:7px 16px;border:1px solid #1a6b3c;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:#1a6b3c;">Данни по години</button>
+        </div>
+        <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin-bottom:14px;">
+          <div id="corrPane_line"><canvas id="corrChart" height="110"></canvas></div>
+          <div id="corrPane_scatter" style="display:none;"><canvas id="corrScatter" height="110"></canvas></div>
+          <div id="corrPane_table" style="display:none;max-height:420px;overflow:auto;"><div id="corrTable"></div></div>
+        </div>
+        <button id="corrTopBtn" onclick="corrToggleTop()" style="padding:7px 16px;border:1px solid #1a6b3c;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:#1a6b3c;margin-bottom:8px;">Покажи най-силните връзки с избраната редица А</button>
+        <div id="corrTop" style="overflow-x:auto;display:none;"></div>
+        <p style="font-size:11px;color:#777;margin-top:8px;">Бележки: при сравнение на стойности две редици, които просто растат с времето (например цени и инфлация), винаги изглеждат свързани. „Годишна промяна“ намалява този ефект. Списъкът на най-силните връзки (по желание) е сред стотици редици, затова част от високите стойности са случайни. Цената е общата сума за населението (питейна вода + отвеждане + пречистване), както в Инфоцентъра, средногодишна (претеглена по дните, през които всяка цена е в сила). ДДС е 20%. Всички парични стойности (цени, инвестиции, приходи и др.) се показват в избраната валута при фиксиран курс 1,95583 лв. за 1 евро. Диаграмата на разсейване показва всяка година като точка (А по хоризонталата, Б по вертикалата) с линия на тренда. Годините без данни не се свързват с линия. Препоръчват се поне 8 общи години.</p>
+      </div>
     </div>
   </div>
 
@@ -507,6 +566,7 @@
 
       <!-- Status cards -->
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;" id="kpiStatusCards"></div>
+      <div id="kpiDashAnalysis" style="background:#fffaf0;border-left:4px solid #e67e22;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13px;line-height:1.5;"></div>
 
       <!-- Charts -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px;">
@@ -528,10 +588,11 @@
           <div id="kpiDonutLabel" style="margin-top:8px;font-size:13px;font-weight:700;color:#333;"></div>
         </div>
         <div style="background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-          <div style="font-size:13px;font-weight:700;color:#922b21;margin-bottom:10px;">📋 Всички 30 КПИ — Статус 2024</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;"><span style="font-size:13px;font-weight:700;color:#922b21;">📋 Всички 30 КПИ — статус за</span><select id="kpiYearSel" onchange="kdOnYear()" style="padding:4px 8px;border:2px solid #c0392b;border-radius:6px;font-size:13px;font-weight:700;"><option>2022</option><option>2023</option><option>2024</option><option selected>2025</option></select></div>
           <div id="kpiAllTable" style="max-height:180px;overflow-y:auto;font-size:12px;"></div>
         </div>
       </div>
+      <div id="kpiHeat"></div>
 
     </div>
   </div>
@@ -539,7 +600,7 @@
   <!-- БП Section -->
   <div class="iwad-section" style="border-top:3px solid #154360;margin-top:8px;">
     <div class="iwad-header" style="background:linear-gradient(135deg,#154360,#1a5276);" onclick="toggleBP()">
-      <h3>📋 БП 2022–2026 — Показатели и Променливи (разчет)</h3>
+      <h3>📋 БП 2022–2026 — Показатели и Променливи</h3>
       <span id="bpToggle">▼ Разгъни</span>
     </div>
     <div class="iwad-body" id="bpBody" style="max-height:none;">
@@ -573,6 +634,7 @@
       </div>
 
       <!-- Table -->
+      <div id="bpAnalysis" style="background:#fffaf0;border-left:4px solid #e67e22;border-radius:8px;padding:12px 14px;margin:0 0 12px;font-size:13px;line-height:1.5;"></div>
       <div style="overflow-x:auto;max-height:1200px;overflow-y:auto;border:1px solid #aed6f1;border-radius:8px;">
         <table style="width:100%;border-collapse:collapse;font-size:12px;" id="bpTable">
           <thead id="bpThead" style="position:sticky;top:0;z-index:2;"></thead>
@@ -618,6 +680,7 @@
       </div>
 
       <!-- Table -->
+      <div id="bavAnalysis" style="background:#fffaf0;border-left:4px solid #e67e22;border-radius:8px;padding:12px 14px;margin:0 0 12px;font-size:13px;line-height:1.5;"></div>
       <div style="overflow-x:auto;max-height:460px;overflow-y:auto;border:1px solid #d7bde2;border-radius:8px;">
         <table style="width:100%;border-collapse:collapse;font-size:12px;" id="bavTable">
           <thead style="position:sticky;top:0;z-index:2;">
@@ -723,6 +786,7 @@
       </div>
       <div class="y-grid" id="yGrid"></div>
       <div id="yMonthlyTrend"></div>
+      <div id="yAnalysis" style="background:#fffaf0;border-left:4px solid #e67e22;border-radius:8px;padding:12px 14px;margin:12px 0;font-size:13px;line-height:1.5;"></div>
       <div style="display:flex;gap:12px;align-items:stretch;flex-wrap:wrap;">
         <div class="y-total-box" style="flex:1;">
           <div>
@@ -1341,6 +1405,38 @@ const MONTHLY_2025 = {
     "ПК15а":{bp_a:5.32,bp_m:null,otch:5.310586,ic2026:5.2},
     "ПК15б":{bp_a:4.23,bp_m:null,otch:4.389994,ic2026:3.9},
   }},
+  5: { label:"Май 2025", kpis: {
+    "ПК1":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:0.99},
+    "ПК2а":{bp_a:0.9994,bp_m:null,otch:0.999762,ic2026:0.99},
+    "ПК2б":{bp_a:0.9846,bp_m:null,otch:0.953125,ic2026:0.98},
+    "ПК2в":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:1.0},
+    "ПК3":{bp_a:1.086,bp_m:null,otch:0.445146,ic2026:8.0},
+    "ПК4а":{bp_a:33.19,bp_m:null,otch:34.618206,ic2026:28.72},
+    "ПК4б":{bp_a:0.3585,bp_m:null,otch:0.360859,ic2026:0.3329},
+    "ПК5":{bp_a:76.71,bp_m:31.9625,otch:31.46179,ic2026:73.24},
+    "ПК6a":{bp_a:0.9858,bp_m:null,otch:0.990698,ic2026:0.9524},
+    "ПК7а":{bp_a:0.9141,bp_m:null,otch:0.994069,ic2026:0.75},
+    "ПК7б":{bp_a:0.9,bp_m:null,otch:0.978518,ic2026:0.75},
+    "ПК8":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:0.93},
+    "ПК9":{bp_a:80.87,bp_m:33.695833,otch:30.991289,ic2026:85.27},
+    "ПК10":{bp_a:0.136,bp_m:null,otch:0.0,ic2026:0.5},
+    "ПК11а":{bp_a:0.052,bp_m:null,otch:0.046377,ic2026:0.055},
+    "ПК11б":{bp_a:0.195,bp_m:null,otch:0.217555,ic2026:0.22},
+    "ПК11в":{bp_a:1.0,bp_m:0.416667,otch:0.305069,ic2026:1.0},
+    "ПК11г":{bp_a:0.0065,bp_m:0.002708,otch:0.001684,ic2026:0.0069},
+    "ПК11д":{bp_a:0.239,bp_m:0.099583,otch:0.10949,ic2026:0.0125},
+    "ПК12а":{bp_a:1.58,bp_m:null,otch:null,ic2026:1.1},
+    "ПК12б":{bp_a:2.36,bp_m:null,otch:null,ic2026:1.1},
+    "ПК12в":{bp_a:1.22,bp_m:null,otch:null,ic2026:1.1},
+    "ПК12г":{bp_a:0.8768,bp_m:null,otch:0.85459,ic2026:0.8848},
+    "ПК12д":{bp_a:0.2085,bp_m:0.086875,otch:0.066539,ic2026:0.201},
+    "ПК12е":{bp_a:0.8863,bp_m:null,otch:0.845855,ic2026:0.8947},
+    "ПК13":{bp_a:1.0,bp_m:null,otch:0.993322,ic2026:1.0},
+    "ПК14а":{bp_a:1.0,bp_m:null,otch:0.993333,ic2026:1.0},
+    "ПК14б":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:1.0},
+    "ПК15а":{bp_a:5.32,bp_m:null,otch:5.310158,ic2026:5.2},
+    "ПК15б":{bp_a:4.23,bp_m:null,otch:4.391593,ic2026:3.9}
+  }},
   6: { label:"Юни 2025", kpis: {
     "ПК1":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:0.99},
     "ПК2а":{bp_a:0.9994,bp_m:null,otch:0.999802,ic2026:0.99},
@@ -1895,6 +1991,7 @@ function getStatus(bp, otch, posoka) {
 // ─── MODE ────────────────────────────────────────────────────
 function setMode(m) {
   mode = m;
+  syncYearOptions();
   ['annual','monthly'].forEach(x => document.getElementById('btn'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('active', m===x));
   document.getElementById('monthSelector').classList.toggle('visible', m==='monthly');
   if (m === 'monthly') {
@@ -1986,6 +2083,7 @@ function buildTable() {
   document.getElementById('sOk').textContent = ok;
   document.getElementById('sBad').textContent = bad;
   buildEPE(year, isM, mdata);
+  kpiAnalysis(year, isM, mdata);
 }
 
 function buildEPE(year, isM, mdata) {
@@ -2006,7 +2104,9 @@ function buildEPE(year, isM, mdata) {
 
     const st = getStatus(bp, otch, kpi.posoka);
     const bpLabel = (isM && mdata && mdata.kpis[pk] && mdata.kpis[pk].bp_m !== null) ? 'БП кум.' : 'БП';
-    const corrLabel = st === 'ok' ? '+0.5%' : '-0.5%';
+    let corrLabel;
+    if (!isM) { const E = yEval(pk, parseInt(year)); corrLabel = (E && E.corr !== null) ? 'Y ' + (E.corr > 0 ? '+' : E.corr < 0 ? '−' : '') + Math.abs(E.corr).toFixed(1) + '% · ' + E.level : 'няма отчет'; }
+    else corrLabel = st === 'ok' ? 'в плана' : 'под плана';
 
     const onclk = 'selectKPI(\'' + pk + '\')';
     return '<div class="epe-card ' + st + '" onclick="' + onclk + '">' +
@@ -2299,6 +2399,7 @@ function calcY(year) {
   document.getElementById('yTotalYear').textContent = 'на база отчет ' + year + ' г.';
 
   const pks = Object.keys(Y_DATA);
+  const yRows = [];
   let totalY = 0;
   let hasNull = false;
 
@@ -2307,56 +2408,11 @@ function calcY(year) {
     const yr = d.years[year];
     if (!yr) return '';
 
-    const bp_prev = yr.bp_prev;
-    const bp_curr = yr.bp_curr;
-    const otch = yr.otch;
-    const isUp = d.posoka === 'up';
-
-    // Check for zero/deteriorating step in BP
-    const stepDiff = isUp ? (bp_curr - bp_prev) : (bp_prev - bp_curr);
-    const isZeroOrWorse = stepDiff <= 0.000001;
-
-    const hasOtch = otch !== null;
+    const E = yEval(pk, year);
+    const {bp_prev, bp_curr, otch, isUp, isZeroOrWorse, hasOtch, ocn, pcn, pin, level, levelCls, corr, corrTxt} = E;
     if (!hasOtch) hasNull = true;
-    const otchVal = otch !== null ? otch : bp_curr;
-
-    let ocn, pcn, pin, noteZero = '';
-
-    if (isZeroOrWorse) {
-      // Нулева/влошена стъпка: оценява се дали отчетът покрива БП(n) директно
-      // Добро = отч >= БП(n) (за up) или отч <= БП(n) (за down)
-      noteZero = '⚠️ Нулева/влошена стъпка';
-      ocn = null; pcn = null;
-      if (!hasOtch) {
-        pin = null;
-      } else {
-        const meetsBP = isUp ? (otchVal >= bp_curr) : (otchVal <= bp_curr);
-        // Use step vs IC2026 as reference for ПИn display
-        const ocnRef = isUp ? Math.abs(d.ic2026 - d.base2020) : Math.abs(d.base2020 - d.ic2026);
-        const pcnRef = isUp ? (otchVal - d.base2020) : (d.base2020 - otchVal);
-        pin = meetsBP ? 100 : (ocnRef !== 0 ? (pcnRef / ocnRef * 100) : 0);
-      }
-    } else {
-      ocn = isUp ? (bp_curr - bp_prev) : (bp_prev - bp_curr);
-      pcn = isUp ? (otchVal - bp_prev) : (bp_prev - otchVal);
-      pin = hasOtch && ocn !== 0 ? (pcn / ocn * 100) : (hasOtch ? 100 : null);
-    }
-
-    // Level and correction
-    let level, levelCls, corr, corrTxt;
-    if (pin === null) {
-      level = 'Няма отчет'; levelCls = 'warn'; corr = null; corrTxt = '—';
-    } else if (pin >= 75) {
-      level = 'Добро'; levelCls = 'ok'; corr = -0.5; corrTxt = '−0.5% (цена ↑)';
-    } else if (pin >= 50) {
-      level = 'Средно'; levelCls = 'warn'; corr = 0; corrTxt = '0% (без корекция)';
-    } else if (pin >= 25) {
-      level = 'Лошо'; levelCls = 'bad'; corr = 0.5; corrTxt = '+0.5% (цена ↓)';
-    } else {
-      level = 'Пълно неизпълнение'; levelCls = 'vbad'; corr = 1.0; corrTxt = '+1.0% (цена ↓↓)';
-    }
-
     if (corr !== null) totalY += corr;
+    yRows.push({pk, pin, level, zero: isZeroOrWorse, hasOtch, d, isUp, bp_prev, bp_curr, otch});
 
     const kpiObj = KPI.find(k => k.pk === pk);
     const desc = kpiObj ? kpiObj.desc : pk;
@@ -2392,6 +2448,7 @@ function calcY(year) {
     totalEl.style.color = totalY < 0 ? '#a0ffb0' : totalY > 0 ? '#ffb0b0' : 'white';
   }
 
+  yAnalysis(year, yRows, totalY, hasNull);
   renderYMonthlyTrend(year);
 }
 
@@ -3075,6 +3132,7 @@ function renderIC() {
   });
   
   document.getElementById('icTbody').innerHTML = html;
+  icAnalysis(icSheet, rows, visYears);
 }
 
 function icQuickQ(q) {
@@ -3155,6 +3213,838 @@ function toggleTrendDash() {
   }
 }
 
+// ─── КОРЕЛАЦИИ ───────────────────────────────────────────────
+let CORR_CAT = null, corrChartInst = null, corrScatterInst = null, corrTab = 'line', CORR_ST = null;
+const CORR_EUR_RATE = 1.95583;
+function corrEuro() { const s = document.getElementById('corrCur'); return !!s && s.value === 'eur'; }
+function corrUnit(it) {
+  const u = it.unit || '';
+  if (!it.cur) return u;
+  return u.replace(/хиляди\s+лева/i, 'хил. лв.').replace(/лева|лв\.?|евро|euro|eur|bgn/i, corrEuro() ? 'евро' : 'лв.');
+}
+function corrFactor(it) {
+  if (!it.cur) return 1;
+  if (corrEuro()) return it.cur === 'bgn' ? 1 / CORR_EUR_RATE : 1;
+  return it.cur === 'eur' ? CORR_EUR_RATE : 1;
+}
+function corrBuildCatalog() {
+  const cat = [];
+  const add = (key, group, label, unit, vals, kw) => {
+    const n = Object.keys(vals).length;
+    const u = unit || '';
+    const cur = /евро|euro|eur/i.test(u) ? 'eur' : (/лв|лева|bgn/i.test(u) ? 'bgn' : null);
+    if (n >= 6) cat.push({key, group, label, unit: u, vals, cur, kw: kw || ''});
+  };
+  const numRow = (r) => { const v = {}; Object.keys(r).forEach(k => { if (/^\d{4}$/.test(k) && r[k] !== '' && r[k] !== null) { const x = Number(r[k]); if (isFinite(x)) v[k] = x; } }); return v; };
+  // Тарифа: средногодишна цена, претеглена по дните, през които всяка цена е в сила (лв., до 2026 вкл.)
+  const tar = IC_DATA['Тарифа'];
+  if (tar) {
+    const cols = tar.years.filter(c => /лв\./.test(c)).map(c => {
+      const m = c.match(/^(\d{4})\s*\((\d{1,2})\.(\d{1,2})/);
+      return m ? {c, t: Date.UTC(+m[1], +m[3] - 1, +m[2])} : null;
+    }).filter(Boolean).sort((a, b) => a.t - b.t);
+    const DAY = 86400000, perYear = {};
+    ['5.1', '5.4', '5.7'].forEach(code => {
+      const row = tar.rows.find(r => String(r.name).trim() === code);
+      if (!row) return;
+      const steps = cols.map(o => ({t: o.t, p: Number(row[o.c]), ok: row[o.c] !== '' && row[o.c] !== null && isFinite(Number(row[o.c]))})).filter(s => s.ok);
+      if (!steps.length) return;
+      const v = {}, y0 = new Date(steps[0].t).getUTCFullYear();
+      for (let y = y0; y <= 2026; y++) {
+        const a = Date.UTC(y, 0, 1), b = Date.UTC(y + 1, 0, 1);
+        let sum = 0, days = 0;
+        steps.forEach((s, i) => {
+          const from = Math.max(s.t, a), to = Math.min(i + 1 < steps.length ? steps[i + 1].t : b, b);
+          if (to > from) { sum += s.p * (to - from) / DAY; days += (to - from) / DAY; }
+        });
+        if (days > 0) v[y] = sum / days;
+      }
+      perYear[code] = v;
+    });
+    if (perYear['5.1'] && perYear['5.4'] && perYear['5.7']) {
+      const net = {}, gross = {};
+      Object.keys(perYear['5.1']).forEach(y => {
+        if (perYear['5.4'][y] != null && perYear['5.7'][y] != null) {
+          net[y] = perYear['5.1'][y] + perYear['5.4'][y] + perYear['5.7'][y];
+          gross[y] = net[y] * 1.2;
+        }
+      });
+      add('T:novat', 'Тарифа', 'Цена за населението, общо за трите услуги, без ДДС', 'лв./м³', net, 'цена тарифа ддс вода');
+      add('T:vat', 'Тарифа', 'Цена за населението, общо за трите услуги, с ДДС', 'лв./м³', gross, 'цена тарифа ддс вода');
+    }
+  }
+  // CAPEX (Инфоцентър, лист Инвестиции, раздел 9.4 и 9.5)
+  const inv = IC_DATA['Инвестиции'];
+  if (inv) {
+    const capex = [
+      ['IV:total', c => !c.code && /КАПИТАЛОВИ РАЗХОДИ/i.test(c.section || '') && /ОБЩО/i.test(c.name || ''), 'Инвестиции — общо (регулирани, нерегулирани и допълнителни)', 'инвестиции общо'],
+      ['CX:capex', c => c.code === '9.4.1.', 'CAPEX — регулирани инвестиции, признати от КЕВР', 'капекс capex регулирани кевр']
+    ];
+    capex.forEach(([key, test, label, kw]) => {
+      const row = inv.rows.find(test);
+      if (row) add(key, 'Капиталови разходи (в пари)', label, 'хил. лв.', numRow(row), kw);
+    });
+  }
+  TREND_DATA.forEach(t => {
+    if (t.id === 'invest') return; // същото като CAPEX общо
+    const v = {}; Object.keys(t.data).forEach(y => { const x = Number(t.data[y]); if (isFinite(x)) v[y] = x; });
+    add('TR:' + t.id, 'Исторически тренд', t.label, t.unit, v);
+  });
+  ['Оперативни данни', 'Макроикономически', 'Търговски данни', 'Финансови данни', 'Инвестиции', 'Социални данни', 'КПИ 2015-2025'].forEach(sh => {
+    const d = IC_DATA[sh]; if (!d) return;
+    d.rows.forEach((r, i) => {
+      if (sh === 'Инвестиции' && (r.section === 'КАПИТАЛОВИ РАЗХОДИ' || r.section === 'CAPEX BY BP')) return; // вече са като CAPEX
+      const nm = ((r.code ? r.code + ' ' : '') + (r.name || '')).trim();
+      add('IC:' + sh + ':' + i, sh === 'Инвестиции' ? 'Инвестиции — физически обеми (м, бр.)' : sh, nm + (r.section ? ' [' + r.section + ']' : ''), r.unit || '', numRow(r));
+    });
+  });
+  return cat;
+}
+function corrSeries(item, mode) {
+  const out = {};
+  const ys = Object.keys(item.vals).map(Number).sort((a, b) => a - b);
+  if (mode === 'yoy') {
+    ys.forEach(y => { const p = item.vals[y - 1], c = item.vals[y]; if (p !== undefined && p !== 0) out[y] = (c - p) / Math.abs(p) * 100; });
+  } else {
+    const k = corrFactor(item);
+    ys.forEach(y => out[y] = item.vals[y] * k);
+  }
+  return out;
+}
+function corrPairs(sa, sb, lag, from, to) {
+  const p = [];
+  Object.keys(sa).map(Number).sort((a, b) => a - b).forEach(y => {
+    if (y >= from && y <= to && sb[y + lag] !== undefined) p.push({year: y, x: sa[y], y: sb[y + lag]});
+  });
+  return p;
+}
+function corrStats(pairs) {
+  const n = pairs.length; if (n < 3) return {n, r: null};
+  const mx = pairs.reduce((a, p) => a + p.x, 0) / n, my = pairs.reduce((a, p) => a + p.y, 0) / n;
+  let sxy = 0, sxx = 0, syy = 0;
+  pairs.forEach(p => { sxy += (p.x - mx) * (p.y - my); sxx += (p.x - mx) ** 2; syy += (p.y - my) ** 2; });
+  if (sxx === 0 || syy === 0) return {n, r: null};
+  return {n, r: sxy / Math.sqrt(sxx * syy), slope: sxy / sxx, icpt: my - sxy / sxx * mx};
+}
+function corrFmt(v) { return v === null || v === undefined ? '—' : Number(v).toLocaleString('bg-BG', {maximumFractionDigits: 3}); }
+function corrStrength(r) {
+  const a = Math.abs(r);
+  return (a >= 0.7 ? 'силна' : a >= 0.4 ? 'умерена' : 'слаба') + (r >= 0 ? ' положителна' : ' отрицателна');
+}
+function corrRanges(years) {
+  if (!years.length) return '';
+  const out = []; let s = years[0], p = years[0];
+  for (let i = 1; i <= years.length; i++) {
+    if (years[i] === p + 1) { p = years[i]; continue; }
+    out.push(s === p ? String(s) : s + '–' + p);
+    s = p = years[i];
+  }
+  return out.join(', ');
+}
+function corrFillSelect(sel, keep, filter) {
+  const f = (filter || '').toLowerCase().trim();
+  const groups = {};
+  CORR_CAT.forEach(it => { if (it.key === keep || !f || (it.label + ' ' + it.group + ' ' + it.kw).toLowerCase().includes(f)) (groups[it.group] = groups[it.group] || []).push(it); });
+  sel.innerHTML = '';
+  Object.keys(groups).forEach(g => {
+    const og = document.createElement('optgroup'); og.label = g;
+    groups[g].forEach(it => { const o = document.createElement('option'); o.value = it.key; o.textContent = it.label + (corrUnit(it) ? ' (' + corrUnit(it) + ')' : ''); og.appendChild(o); });
+    sel.appendChild(og);
+  });
+  if (keep && [...sel.options].some(o => o.value === keep)) sel.value = keep;
+}
+function filterCorrLists() {
+  const a = document.getElementById('corrA'), b = document.getElementById('corrB');
+  const ka = a.value, kb = b.value, f = document.getElementById('corrFilter').value;
+  corrFillSelect(a, ka, f); corrFillSelect(b, kb, f);
+  renderCorr(true);
+}
+function corrCurChange() { filterCorrLists(); }
+const CORR_PRESETS = [
+  ['Цена и инвестиции (общо)', 'T:novat', 'IV:total', 0],
+  ['Цена и CAPEX (регулирани)', 'T:novat', 'CX:capex', 0],
+  ['Цена и аварии по водопроводната мрежа', 'T:novat', 'TR:avar_vm', 0],
+  ['Цена и загуби на вода (NRW)', 'T:novat', 'TR:nrw', 0],
+  ['Цена и фактурирана вода', 'T:novat', 'TR:fakt_voda', 0],
+  ['Цена и общи постъпления', 'T:novat', 'TR:prihodi', 0],
+  ['Инвестиции и аварии (след 2 г.)', 'IV:total', 'TR:avar_vm', 2],
+  ['CAPEX и аварии (след 2 г.)', 'CX:capex', 'TR:avar_vm', 2],
+  ['Инвестиции и загуби на вода (след 2 г.)', 'IV:total', 'TR:nrw', 2],
+  ['CAPEX и загуби на вода (след 2 г.)', 'CX:capex', 'TR:nrw', 2]
+];
+function initCorr() {
+  if (CORR_CAT) return;
+  CORR_CAT = corrBuildCatalog();
+  const has = k => CORR_CAT.some(x => x.key === k);
+  const box = document.getElementById('corrPresets');
+  CORR_PRESETS.filter(p => has(p[1]) && has(p[2])).forEach(p => {
+    const b = document.createElement('button');
+    b.textContent = p[0];
+    b.style.cssText = 'padding:6px 12px;border:1px solid #27ae60;background:#fff;color:#1a6b3c;border-radius:16px;font-size:12px;font-weight:600;cursor:pointer;';
+    b.onclick = () => { document.getElementById('corrFilter').value = ''; filterCorrLists(); document.getElementById('corrA').value = p[1]; document.getElementById('corrB').value = p[2]; document.getElementById('corrLag').value = String(p[3]); renderCorr(); };
+    box.appendChild(b);
+  });
+  ['corrFrom', 'corrTo'].forEach(id => {
+    const s = document.getElementById(id);
+    for (let y = 2000; y <= 2026; y++) { const o = document.createElement('option'); o.value = y; o.textContent = y; s.appendChild(o); }
+  });
+  const a = document.getElementById('corrA'), b = document.getElementById('corrB');
+  corrFillSelect(a, 'T:novat', ''); corrFillSelect(b, 'IV:total', '');
+  a.value = has('T:novat') ? 'T:novat' : a.options[0].value;
+  b.value = has('IV:total') ? 'IV:total' : b.options[0].value;
+  renderCorr();
+}
+function corrSetTab(t) {
+  corrTab = t;
+  ['line', 'scatter', 'table'].forEach(k => {
+    document.getElementById('corrPane_' + k).style.display = k === t ? 'block' : 'none';
+    const bt = document.getElementById('corrTabBtn_' + k);
+    bt.style.background = k === t ? '#1a6b3c' : '#fff'; bt.style.color = k === t ? '#fff' : '#1a6b3c';
+  });
+  corrDraw();
+}
+// keepPeriod = true: запазва избрания период; иначе го връща към общия период на двете редици
+function renderCorr(keepPeriod) {
+  if (!CORR_CAT) return;
+  const A = CORR_CAT.find(x => x.key === document.getElementById('corrA').value);
+  const B = CORR_CAT.find(x => x.key === document.getElementById('corrB').value);
+  const mode = document.getElementById('corrMode').value;
+  const lag = parseInt(document.getElementById('corrLag').value);
+  const res = document.getElementById('corrResult');
+  if (!A || !B) { res.textContent = 'Няма съвпадения за това търсене.'; return; }
+  const sa = corrSeries(A, mode), sb = corrSeries(B, mode);
+  const all = corrPairs(sa, sb, lag, 0, 9999);
+  const fromSel = document.getElementById('corrFrom'), toSel = document.getElementById('corrTo');
+  if (!keepPeriod && all.length) { fromSel.value = all[0].year; toSel.value = all[all.length - 1].year; }
+  let from = parseInt(fromSel.value), to = parseInt(toSel.value);
+  if (from > to) { const t = from; from = to; to = t; fromSel.value = from; toSel.value = to; }
+  const pairs = corrPairs(sa, sb, lag, from, to);
+  const st = corrStats(pairs);
+  const miss = (s, shift) => { const m = []; for (let y = from; y <= to; y++) if (s[y + shift] === undefined) m.push(y); return m; };
+  const missA = miss(sa, 0), missB = miss(sb, 0);
+  CORR_ST = {A, B, mode, lag, sa, sb, from, to, pairs, st};
+  const lagSel = document.getElementById('corrLag'); lagSel.style.border = lag ? '2px solid #e67e22' : '1px solid #bbb';
+  let html;
+  if (st.r === null) {
+    html = '<b>Недостатъчно общи години</b> в избрания период (' + st.n + '). Разшири периода или избери други редици.';
+  } else {
+    html = '<div style="font-size:15px;"><b>Коефициент на корелация r = ' + st.r.toFixed(2) + '</b> — ' + corrStrength(st.r) + ' връзка</div>' +
+      '<div style="margin-top:4px;">Период: ' + from + '–' + to + '. Години с данни и за двете редици: ' + st.n + (lag ? '; <b style="color:#b9770e;">закъснение: Б е взета ' + lag + ' г. след А</b>' : '') + '. ' +
+      (st.n < 8 ? '<b style="color:#c0392b;">Малко наблюдения, изводът е ненадежден.</b> ' : '') +
+      (mode === 'level' ? 'Ако и двете редици растат или падат с времето, връзката може да е привидна; опитай „Годишна промяна“.' : '') + '</div>';
+  }
+  if (missA.length || missB.length) {
+    html += '<div style="margin-top:4px;color:#8a5a00;">Липсват данни в периода: ' +
+      (missA.length ? 'А — ' + corrRanges(missA) : '') + (missA.length && missB.length ? '; ' : '') + (missB.length ? 'Б — ' + corrRanges(missB) : '') +
+      '. Тези години не се свързват с линия и не участват в r.</div>';
+  }
+  html += '<div style="margin-top:4px;color:#555;">Корелацията не доказва причина и следствие.</div>';
+  res.innerHTML = html;
+  corrAnalysis();
+  corrDraw();
+  corrTable();
+  // най-силни връзки в избрания период
+  const rows = [], minN = st.n >= 8 ? 8 : 5;
+  CORR_CAT.forEach(it => {
+    if (it.key === A.key || (A.group === 'Тарифа' && it.group === 'Тарифа')) return;
+    const s = corrStats(corrPairs(sa, corrSeries(it, mode), lag, from, to));
+    if (s.r !== null && s.n >= minN) rows.push({it, r: s.r, n: s.n});
+  });
+  rows.sort((x, y) => Math.abs(y.r) - Math.abs(x.r));
+  const top = [];
+  rows.forEach(o => { if (top.length < 12 && !top.some(t => t.it.label === o.it.label && Math.abs(t.r - o.r) < 1e-6)) top.push(o); });
+  document.getElementById('corrTop').innerHTML = top.length ?
+    '<table style="width:100%;border-collapse:collapse;font-size:12px;"><tr style="background:#eaf5ee;"><th style="text-align:left;padding:6px;">Редица</th><th style="padding:6px;">Група</th><th style="padding:6px;">r</th><th style="padding:6px;">Години</th></tr>' +
+    top.map(o => '<tr style="border-bottom:1px solid #eee;cursor:pointer;" onclick="corrPick(\'' + o.it.key.replace(/'/g, "\\'") + '\')"><td style="padding:6px;">' + o.it.label + (corrUnit(o.it) ? ' <span style="color:#888;">(' + corrUnit(o.it) + ')</span>' : '') + '</td><td style="padding:6px;text-align:center;color:#666;">' + o.it.group + '</td><td style="padding:6px;text-align:center;font-weight:700;color:' + (o.r >= 0 ? '#1a6b3c' : '#c0392b') + ';">' + o.r.toFixed(2) + '</td><td style="padding:6px;text-align:center;">' + o.n + '</td></tr>').join('') + '</table>' :
+    '<div style="color:#777;font-size:12px;">Няма редици с достатъчно общи години в този период.</div>';
+}
+
+// ─── Автоматичен анализ: правила върху данните, без AI и без външни извиквания ───
+function corrCls(r) { const a = Math.abs(r); return a >= 0.7 ? 2 : a >= 0.4 ? 1 : 0; }
+function corrAnalysis() {
+  const box = document.getElementById('corrAnalysis');
+  const {A, B, mode, lag, sa, sb, from, to, pairs, st} = CORR_ST;
+  if (st.r === null || st.n < 5) { box.innerHTML = '<b>Анализ:</b> няма достатъчно общи години (поне 5) за смислено тълкуване.'; return; }
+  const r = st.r, n = st.n, pct = Math.round(r * r * 100);
+  const nm = it => '„' + it.label + '“';
+  const dir = r >= 0 ? 'се движат в една посока (когато А е по-голяма, Б обикновено също е по-голяма)' : 'се движат в противоположни посоки (когато А е по-голяма, Б обикновено е по-малка)';
+  const first = pairs[0], last = pairs[pairs.length - 1];
+  const chg = (a, b) => a === 0 ? null : (b - a) / Math.abs(a) * 100;
+  const fmtPct = v => v === null ? '' : (v >= 0 ? '+' : '') + Math.round(v) + '%';
+  const L = [];
+  // 1. Какво показва
+  L.push('<b>Какво показва:</b> ' + corrStrength(r).replace(' ', ' ') + ' връзка (r = ' + r.toFixed(2) + ', ' + n + ' години). ' + nm(A) + ' и ' + nm(B) + (lag ? ' (' + lag + ' г. по-късно)' : '') + ' ' + dir + '. Около ' + pct + '% от годишните колебания на Б се съотнасят с А; останалото се обяснява с други фактори.');
+  // 2. Посока на самите редици
+  if (mode === 'level') {
+    const ca = chg(first.x, last.x), cb = chg(first.y, last.y);
+    if (ca !== null && cb !== null) L.push('<b>Развитие:</b> А се променя с ' + fmtPct(ca) + ' (' + first.year + ': ' + corrFmt(first.x) + ' → ' + last.year + ': ' + corrFmt(last.x) + '), а Б – с ' + fmtPct(cb) + ' (' + (first.year + lag) + ': ' + corrFmt(first.y) + ' → ' + (last.year + lag) + ': ' + corrFmt(last.y) + ').');
+  }
+  // 3. Устойчивост: изключване на по една година
+  let loo = [], infl = null;
+  if (n >= 6) {
+    pairs.forEach((p, i) => { const s = corrStats(pairs.filter((_, k) => k !== i)); if (s.r !== null) loo.push({year: p.year, r: s.r}); });
+    if (loo.length) { infl = loo.reduce((a, b) => Math.abs(b.r - r) > Math.abs(a.r - r) ? b : a); }
+  }
+  let robust = true; const notes = [];
+  if (loo.length && corrCls(r) > 0) {
+    const mn = Math.min(...loo.map(o => o.r)), mx = Math.max(...loo.map(o => o.r));
+    if (mn * mx < 0) { robust = false; notes.push('при изключване на единични години знакът на връзката се обръща (r от ' + mn.toFixed(2) + ' до ' + mx.toFixed(2) + ')'); }
+    else if (Math.abs(infl.r - r) >= 0.15 || corrCls(infl.r) !== corrCls(r)) { robust = false; notes.push('една година променя резултата осезаемо: без ' + infl.year + ' r = ' + infl.r.toFixed(2) + ' вместо ' + r.toFixed(2)); }
+  }
+  // 4. Чувствителност към закъснението
+  const lagR = [];
+  for (let k = 0; k <= 3; k++) { const s = corrStats(corrPairs(sa, sb, k, from, to)); if (s.r !== null && s.n >= 5) lagR.push({k, r: s.r, n: s.n}); }
+  let lagTxt = '';
+  if (lagR.length > 1) {
+    lagTxt = lagR.map(o => (o.k === 0 ? 'без закъснение' : o.k + ' г.') + ': ' + o.r.toFixed(2)).join('; ');
+    const cur = lagR.find(o => o.k === lag), best = lagR.reduce((a, b) => Math.abs(b.r) > Math.abs(a.r) ? b : a);
+    if (corrCls(r) > 0 && cur && best.k !== lag && Math.abs(best.r) - Math.abs(cur.r) >= 0.15) { robust = false; notes.push('избраното закъснение не е най-силното – при ' + (best.k ? best.k + ' г.' : 'без закъснение') + ' r = ' + best.r.toFixed(2)); }
+    else if (cur && lagR.some(o => o.k !== lag && Math.abs(o.r) < 0.15) && Math.abs(cur.r) >= 0.3 && lagR.filter(o => Math.abs(o.r) < 0.15).length >= 2) { robust = false; notes.push('връзката се появява само при това закъснение, при съседните е близо до нула'); }
+  }
+  if (corrCls(r) === 0) {
+    const bw = lagR.reduce((a, b) => Math.abs(b.r) > Math.abs(a.r) ? b : a, lagR[0]);
+    if (bw && bw.k !== lag && Math.abs(bw.r) >= 0.4) notes.push('при закъснение ' + bw.k + ' г. r = ' + bw.r.toFixed(2) + ', но това е най-добрият от няколко опита и може да е случайно съвпадение – приемай го с повишено внимание');
+  }
+  // 5. Чувствителност към периода: втората половина
+  if (n >= 10) {
+    const half = pairs.slice(Math.floor(n / 2)), s2 = corrStats(half);
+    if (s2.r !== null) {
+      if (corrCls(r) > 0 && (r * s2.r < 0 || Math.abs(s2.r - r) >= 0.3)) { robust = false; notes.push('във втората половина на периода (' + half[0].year + '–' + last.year + ', ' + half.length + ' г.) r = ' + s2.r.toFixed(2) + ' – връзката не е еднаква през целия период'); }
+    }
+  }
+  // 6. Тренд ефект
+  let yoyTxt = '';
+  if (mode === 'level') {
+    const s2 = corrStats(corrPairs(corrSeries(A, 'yoy'), corrSeries(B, 'yoy'), lag, from, to));
+    if (s2.r !== null && s2.n >= 5) {
+      if (Math.abs(r) >= 0.4 && (r * s2.r < 0 || Math.abs(s2.r) < 0.3)) { robust = false; notes.push('при сравнение на годишните промени връзката почти изчезва (r = ' + s2.r.toFixed(2) + ') – възможно е двете редици просто да се движат с времето'); }
+      else if (Math.abs(r) >= 0.4 && r * s2.r > 0) yoyTxt = 'Връзката се запазва и при сравнение на годишните промени (r = ' + s2.r.toFixed(2) + '), което е по-силен знак.';
+    }
+  }
+  // Изход
+  let verdict;
+  if (corrCls(r) === 0) verdict = 'Връзката е слаба – по тези данни не може да се твърди, че А и Б се движат заедно.';
+  else if (n < 8) verdict = 'Връзката изглежда ' + (corrCls(r) === 2 ? 'силна' : 'умерена') + ', но годините са малко и изводът е предварителен.';
+  else if (robust) verdict = 'Връзката е ' + (corrCls(r) === 2 ? 'силна' : 'умерена') + ' и устойчива при проверките (изключване на година, закъснение, период).';
+  else verdict = 'Връзката е ' + (corrCls(r) === 2 ? 'силна' : 'умерена') + ' на пръв поглед, но е <b>чувствителна</b> – не трябва да се използва като твърд извод.';
+  L.push('<b>Оценка:</b> ' + verdict);
+  if (notes.length) L.push((corrCls(r) === 0 ? '<b>Забележка:</b> ' : '<b>Какво я разклаща:</b> ') + notes.join('; ') + '.');
+  if (yoyTxt) L.push(yoyTxt);
+  if (lagTxt) L.push('<span style="color:#666;">Сравнение по закъснение за същия период – ' + lagTxt + '.</span>');
+  L.push('<span style="color:#666;">Автоматично изчислено от данните по фиксирани правила (не е мнение на AI). Корелацията не доказва причина и следствие – тълкуването остава за експерта.</span>');
+  box.innerHTML = '<div style="font-weight:700;color:#b9770e;margin-bottom:4px;">Анализ</div>' + L.map(x => '<div style="margin-bottom:5px;">' + x + '</div>').join('');
+}
+function corrAxisTitle(it, mode) { return mode === 'yoy' ? '% промяна' : corrUnit(it); }
+function corrDraw() {
+  if (!CORR_ST) return;
+  const {A, B, mode, lag, sa, sb, from, to, pairs, st} = CORR_ST;
+  const lab = (it, p) => p + ': ' + it.label + ' (' + corrAxisTitle(it, mode) + ')';
+  if (corrTab === 'line') {
+    const labels = []; for (let y = from; y <= to; y++) labels.push(String(y));
+    const da = labels.map(y => sa[y] !== undefined ? sa[y] : null), db = labels.map(y => sb[y] !== undefined ? sb[y] : null);
+    if (corrChartInst) corrChartInst.destroy();
+    corrChartInst = new Chart(document.getElementById('corrChart').getContext('2d'), {
+      type: 'line',
+      data: {labels, datasets: [
+        {label: lab(A, 'А'), data: da, borderColor: '#1a5276', backgroundColor: '#1a5276', yAxisID: 'y', tension: 0.15, spanGaps: false, pointRadius: 3},
+        {label: lab(B, 'Б'), data: db, borderColor: '#c0392b', backgroundColor: '#c0392b', yAxisID: 'y1', tension: 0.15, spanGaps: false, pointRadius: 3}]},
+      options: {responsive: true, interaction: {mode: 'index', intersect: false},
+        plugins: {legend: {position: 'bottom'}, tooltip: {callbacks: {label: i => i.dataset.label.slice(0, 40) + ': ' + corrFmt(i.parsed.y)}}},
+        scales: {y: {position: 'left', title: {display: true, text: corrAxisTitle(A, mode), color: '#1a5276'}},
+                 y1: {position: 'right', grid: {drawOnChartArea: false}, title: {display: true, text: corrAxisTitle(B, mode), color: '#c0392b'}}}}
+    });
+  } else if (corrTab === 'scatter') {
+    if (corrScatterInst) corrScatterInst.destroy();
+    const ds = [{type: 'scatter', label: 'Години', data: pairs.map(p => ({x: p.x, y: p.y, year: p.year})), backgroundColor: '#1a6b3c', pointRadius: 5}];
+    if (st.r !== null && pairs.length) {
+      const xs = pairs.map(p => p.x), x0 = Math.min(...xs), x1 = Math.max(...xs);
+      ds.push({type: 'line', label: 'Линия на тренда', data: [{x: x0, y: st.icpt + st.slope * x0}, {x: x1, y: st.icpt + st.slope * x1}], borderColor: '#c0392b', borderWidth: 2, pointRadius: 0, fill: false});
+    }
+    corrScatterInst = new Chart(document.getElementById('corrScatter').getContext('2d'), {
+      type: 'scatter', data: {datasets: ds},
+      options: {responsive: true, plugins: {legend: {position: 'bottom'},
+        tooltip: {callbacks: {label: i => i.raw.year ? i.raw.year + ': А = ' + corrFmt(i.raw.x) + ', Б = ' + corrFmt(i.raw.y) : ''}}},
+        scales: {x: {title: {display: true, text: 'А: ' + A.label + ' (' + corrAxisTitle(A, mode) + ')'}}, y: {title: {display: true, text: 'Б: ' + B.label + ' (' + corrAxisTitle(B, mode) + ')' + (lag ? ', ' + lag + ' г. по-късно' : '')}}}}
+    });
+  }
+}
+function corrTable() {
+  if (!CORR_ST) return;
+  const {A, B, mode, lag, sa, sb, from, to} = CORR_ST;
+  const th = 'padding:6px;text-align:right;background:#eaf5ee;';
+  let h = '<table style="width:100%;border-collapse:collapse;font-size:12px;"><tr><th style="' + th + 'text-align:left;">Година</th><th style="' + th + '">А: ' + A.label + ' (' + corrAxisTitle(A, mode) + ')</th><th style="' + th + '">Б: ' + B.label + ' (' + corrAxisTitle(B, mode) + ')</th><th style="' + th + 'text-align:center;">Участва в r</th></tr>';
+  for (let y = from; y <= to; y++) {
+    const a = sa[y], b = sb[y], used = a !== undefined && sb[y + lag] !== undefined;
+    h += '<tr style="border-bottom:1px solid #eee;"><td style="padding:5px 6px;font-weight:600;">' + y + '</td>' +
+      '<td style="padding:5px 6px;text-align:right;' + (a === undefined ? 'background:#fdecea;color:#999;' : '') + '">' + (a === undefined ? 'няма данни' : corrFmt(a)) + '</td>' +
+      '<td style="padding:5px 6px;text-align:right;' + (b === undefined ? 'background:#fdecea;color:#999;' : '') + '">' + (b === undefined ? 'няма данни' : corrFmt(b)) + '</td>' +
+      '<td style="padding:5px 6px;text-align:center;color:' + (used ? '#1a6b3c' : '#bbb') + ';">' + (used ? 'да' : '—') + '</td></tr>';
+  }
+  h += '</table>';
+  if (lag) h += '<div style="font-size:11px;color:#777;margin-top:8px;">„Участва в r“ = да, когато има данни за А в тази година и за Б ' + lag + ' г. по-късно. Затова последните ' + lag + ' г. на А не участват (за тях още няма данни за Б).</div>';
+  else h += '<div style="font-size:11px;color:#777;margin-top:8px;">„Участва в r“ = да, когато има данни и за двете редици в тази година.</div>';
+  document.getElementById('corrTable').innerHTML = h;
+}
+function corrPick(key) {
+  document.getElementById('corrFilter').value = '';
+  filterCorrLists();
+  document.getElementById('corrB').value = key;
+  renderCorr();
+  document.getElementById('corrResult').scrollIntoView({behavior: 'smooth', block: 'center'});
+}
+
+function corrToggleTop() {
+  const d = document.getElementById('corrTop'), b = document.getElementById('corrTopBtn');
+  const show = d.style.display === 'none';
+  d.style.display = show ? 'block' : 'none';
+  b.textContent = (show ? 'Скрий' : 'Покажи') + ' най-силните връзки с избраната редица А';
+}
+
+// Ръчна смяна на редица: връща закъснението на 0, за да не остава скрита настройка от готов бутон
+function corrManual() { document.getElementById('corrLag').value = '0'; renderCorr(); }
+// ─── Автоматичен анализ (правила върху данните; без AI и без външни извиквания) ───
+const AN_STYLE = 'background:#fffaf0;border-left:4px solid #e67e22;border-radius:8px;padding:12px 14px;margin-top:12px;font-size:13px;line-height:1.5;';
+const AN_NOTE = '<div style="color:#666;margin-top:6px;">Автоматично изчислено от данните по фиксирани правила (не е мнение на AI). Тълкуването на причините остава за експерта.</div>';
+function anNum(v, d) { return Number(v).toLocaleString('bg-BG', {maximumFractionDigits: d === undefined ? 1 : d}); }
+function anList(arr, max) { max = max || 6; return arr.slice(0, max).join('; ') + (arr.length > max ? '; и още ' + (arr.length - max) : ''); }
+function anBox(id, lines) {
+  const el = document.getElementById(id); if (!el) return;
+  el.innerHTML = '<div style="font-weight:700;color:#b9770e;margin-bottom:4px;">Анализ</div>' + lines.map(x => '<div style="margin-bottom:5px;">' + x + '</div>').join('') + AN_NOTE;
+}
+function anDataset(yr) { return yr === 2024 ? MONTHLY_2024 : yr === 2026 ? MONTHLY_2026 : yr === 2025 ? MONTHLY_2025 : null; }
+
+// ── 1. Таблица с ключови показатели (годишен и месечен изглед) ──
+function kpiEval(kpi, isM, md, year) {
+  const ANN = ['ПК12а', 'ПК12б', 'ПК12в'];
+  let bp, otch;
+  if (isM && md && md.kpis[kpi.pk]) { const d = md.kpis[kpi.pk]; bp = d.bp_m !== null ? d.bp_m : d.bp_a; otch = d.otch; }
+  else { const a = getYearData(kpi, year); bp = a[0]; otch = a[1]; }
+  const annualOnly = isM && ANN.includes(kpi.pk) && otch === null;
+  const st = annualOnly ? 'ok' : getStatus(bp, otch, kpi.posoka);
+  let worse = null;
+  if (bp !== null && otch !== null && bp !== 0) { const dev = (otch - bp) / Math.abs(bp) * 100; worse = kpi.posoka === 'up' ? -dev : dev; }
+  return {kpi, bp, otch, st, noData: otch === null && !annualOnly, annualOnly, worse};
+}
+function kpiAnalysis(year, isM, md) {
+  const ev = KPI.map(k => kpiEval(k, isM, md, year));
+  const ok = ev.filter(e => e.st === 'ok'), bad = ev.filter(e => e.st !== 'ok');
+  const nod = bad.filter(e => e.noData), real = bad.filter(e => !e.noData);
+  const per = isM && md ? md.label : String(year);
+  const L = [];
+  L.push('<b>Общо за ' + per + ':</b> изпълнени са ' + ok.length + ' от ' + ev.length + ' показателя (' + Math.round(ok.length / ev.length * 100) + '%). ' +
+    (bad.length ? 'Неизпълнени: ' + bad.length + (nod.length ? ', от които ' + nod.length + ' без отчетена стойност (броят се като неизпълнени): ' + anList(nod.map(e => e.kpi.pk), 8) : '') + '.' : 'Няма неизпълнени показатели.'));
+  const lbl = e => '<b>' + e.kpi.pk + '</b> – отчет ' + fv(e.otch, e.kpi.unit, e.kpi.pk) + ' срещу план ' + fv(e.bp, e.kpi.unit, e.kpi.pk) + ' (' + anNum(Math.abs(e.worse)) + '% по-лошо)';
+  const real2 = real.filter(e => e.worse !== null).sort((a, b) => b.worse - a.worse);
+  if (real2.length) {
+    const big = real2.filter(e => e.worse > 5), near = real2.filter(e => e.worse <= 5);
+    if (big.length) L.push('<b>Най-голямо изоставане от плана:</b> ' + anList(big.slice(0, 5).map(lbl), 5) + (big.length > 5 ? '; още ' + (big.length - 5) + ' над 5%' : '') + '.');
+    if (near.length) L.push('<b>На косъм от плана</b> (под 5% отклонение): ' + anList(near.map(e => e.kpi.pk + ' (' + anNum(e.worse) + '%)'), 8) + ' – най-лесни за наваксване.');
+  }
+  const epe = ev.filter(e => EPE.includes(e.kpi.pk)), epeOk = epe.filter(e => e.st === 'ok'), epeBad = epe.filter(e => e.st !== 'ok');
+  L.push('<b>Единни показатели за ефективност (ЕПЕ):</b> ' + epeOk.length + ' от ' + epe.length + ' са изпълнени' + (epeBad.length ? '; неизпълнени: ' + epeBad.map(e => e.kpi.pk + (e.noData ? ' (без отчет)' : '')).join(', ') + ' – те влияят на корекцията на цената (коефициент Y).' : '.'));
+  // сравнение
+  const cmp = (prev, name) => {
+    if (!prev) return;
+    const pe = KPI.map(k => prev(k)), pok = pe.filter(e => e.st === 'ok').length;
+    if (pe.every(e => e.noData)) return;
+    const worsened = [], improved = [];
+    ev.forEach((e, i) => { const p = pe[i]; if (p.noData && e.noData) return; if (p.st === 'ok' && e.st !== 'ok') worsened.push(e.kpi.pk); else if (p.st !== 'ok' && e.st === 'ok') improved.push(e.kpi.pk); });
+    const diff = ok.length - pok;
+    L.push('<b>Спрямо ' + name + ':</b> изпълнени ' + ok.length + ' срещу ' + pok + ' (' + (diff > 0 ? '+' : '') + diff + ').' +
+      (improved.length ? ' Вече са изпълнени: ' + anList(improved) + '.' : '') + (worsened.length ? ' Станаха неизпълнени: ' + anList(worsened) + '.' : '') +
+      (!improved.length && !worsened.length ? ' Няма показател със сменен статус.' : ''));
+  };
+  if (isM && md) {
+    const m = parseInt(document.getElementById('monthSelect').value), yr = parseInt(document.getElementById('yearSelect').value);
+    const dsCur = anDataset(yr);
+    const prevMd = m > 1 ? (dsCur && dsCur[m - 1]) : (anDataset(yr - 1) && anDataset(yr - 1)[12]);
+    if (prevMd) cmp(k => kpiEval(k, true, prevMd, yr), 'предходния месец (' + prevMd.label + ')');
+    const sameMd = anDataset(yr - 1) && anDataset(yr - 1)[m];
+    if (sameMd) cmp(k => kpiEval(k, true, sameMd, yr - 1), 'същия месец миналата година (' + sameMd.label + ')');
+    L.push('<span style="color:#666;">Показателите с отметка „кум.“ се сравняват с кумулативния план от началото на годината, затова техният статус може да се променя от месец на месец.</span>');
+  } else if (!isM && year > 2022) {
+    cmp(k => kpiEval(k, false, null, year - 1), year - 1 + ' г.');
+  }
+  anBox('kpiAnalysis', L);
+}
+
+// ── 2. Коефициент Y ──
+function yAnalysis(year, rows, totalY, hasNull) {
+  const n = rows.length; if (!n) return;
+  const L = [];
+  const missing = rows.filter(r => !r.hasOtch).map(r => r.pk);
+  if (hasNull) L.push('<b>Y за ' + year + ' е непълен:</b> няма отчет за ' + missing.join(', ') + '. Общата стойност не се изчислява, докато липсват отчети. Показателите с отчет са оценени отделно по-долу.');
+  else L.push('<b>Y за ' + year + ' = ' + anNum(totalY, 1) + '%</b> – ' + (totalY < 0 ? 'цената се покачва с ' + anNum(-totalY, 1) + '% (награда)' : totalY > 0 ? 'цената намалява с ' + anNum(totalY, 1) + '% (наказание)' : 'без ценова корекция') + '. Възможният диапазон при ' + n + ' показателя е от −' + anNum(n * 0.5, 1) + '% (всички „добро“) до +' + anNum(n * 1.0, 1) + '% (всички „пълно неизпълнение“).');
+  const grp = {}; rows.forEach(r => { (grp[r.level] = grp[r.level] || []).push(r.pk); });
+  L.push('<b>Разпределение:</b> ' + Object.keys(grp).map(k => k + ' – ' + grp[k].join(', ')).join('; ') + '. Всяко ниво на един показател струва 0,5% към коефициента Y.');
+  const calc = rows.filter(r => r.hasOtch && !r.zero && r.pin !== null);
+  const up = calc.filter(r => r.pin < 75).map(r => {
+    const next = r.pin < 25 ? 25 : r.pin < 50 ? 50 : 75, names = {25: 'Лошо', 50: 'Средно', 75: 'Добро'};
+    const ocn = Math.abs(r.bp_curr - r.bp_prev), need = r.isUp ? r.bp_prev + next / 100 * ocn : r.bp_prev - next / 100 * ocn;
+    return {r, next, gap: next - r.pin, need, name: names[next]};
+  }).sort((a, b) => a.gap - b.gap);
+  if (up.length) L.push('<b>Най-близо до по-добро ниво:</b> ' + anList(up.slice(0, 3).map(o => '<b>' + o.r.pk + '</b> е на ' + anNum(o.gap) + ' пункта от ниво „' + o.name + '“ (трябва отчет ' + (o.r.isUp ? '≥ ' : '≤ ') + fv(o.need, o.r.d.unit, o.r.pk) + ', сега ' + fv(o.r.otch, o.r.d.unit, o.r.pk) + ')'), 3) + '. Преминаването на ниво подобрява Y с 0,5%.');
+  const risk = calc.map(r => { const fl = r.pin >= 75 ? 75 : r.pin >= 50 ? 50 : r.pin >= 25 ? 25 : 0; return {r, fl, margin: r.pin - fl}; }).filter(o => o.fl > 0 && o.margin <= 10).sort((a, b) => a.margin - b.margin);
+  if (risk.length) L.push('<b>С малък запас над прага:</b> ' + anList(risk.map(o => '<b>' + o.r.pk + '</b> (' + anNum(o.margin) + ' пункта над ' + o.fl + '%)'), 4) + ' – лек спад в отчета може да ги свали с ниво.');
+  const zs = rows.filter(r => r.zero).map(r => r.pk);
+  if (zs.length) L.push('<b>Нулева или влошена стъпка в плана:</b> ' + zs.join(', ') + ' – оценява се само дали отчетът достига БП(n), затова разстоянието до прага не се изчислява.');
+  const over = rows.filter(r => r.pin !== null && r.pin > 100).map(r => r.pk);
+  if (over.length) L.push('Отчетът надхвърля плана за: ' + over.join(', ') + ' (ПИ над 100%) – допълнителното преизпълнение не носи повече от ниво „Добро“.');
+  const rv = (typeof TREND_DATA !== 'undefined') && (TREND_DATA.find(t => t.id === 'prihodi') || {}).data;
+  if (rv && rv['2025']) L.push('<b>Ориентир в пари:</b> всяка стъпка от 0,5% корекция на цената е около ' + anNum(rv['2025'] * 0.005, 0) + ' хил. лв. годишно при база „Общи постъпления“ за 2025 (' + anNum(rv['2025'], 0) + ' хил. лв.). Реалната база са регулираните приходи от водни услуги, затова приеми числото като порядък.');
+  if (year === 2026 && typeof kdLatestMonth === 'function') {
+    const lm = kdLatestMonth(), ov = {};
+    Object.keys(Y_DATA).forEach(pk => { const kd = lm.md.kpis[pk]; if (kd && kd.otch !== null && kd.otch !== undefined) ov[pk] = kd.otch; });
+    const pj = yTotal(2026, ov);
+    if (!pj.hasNull) L.push('<b>Проекция към ' + lm.md.label + ':</b> ако нивата на ЕПЕ показателите към този месец се запазят до края на годината, Y за 2026 ≈ ' + anSign(pj.total) + ' (' + pj.rows.map(r => r.pk + ' – ' + r.level).join('; ') + '). Това е ориентир, не официален разчет.' + (pj.rows.some(r => r.isZeroOrWorse && r.level === 'Пълно неизпълнение') ? ' <span style="color:#8a5a00;">Внимание: показателите с нулева стъпка (напр. ПК2а) преминават към „Пълно неизпълнение“ дори при много малко отклонение от плана, затова проекцията е силно чувствителна.</span>' : ''));
+  }
+  anBox('yAnalysis', L);
+}
+
+// ── 3. Исторически тренд – основна графика ──
+const AN_GOOD = {nrw: 'down', avar_vm: 'down', avkm: 'down'};
+function trendAnalysis(ind, years, values) {
+  const ys = years.map(Number), n = ys.length;
+  if (n < 4) { anBox('trendAnalysis', ['Недостатъчно години за анализ.']); return; }
+  const L = [], f = v => anNum(v, Math.abs(v) >= 100 ? 0 : 2), pc = v => (v >= 0 ? '+' : '') + anNum(v, 1) + '%';
+  const at = y => { const i = ys.indexOf(y); return i < 0 ? null : values[i]; };
+  const lastY = ys[n - 1], last = values[n - 1], firstY = ys[0], first = values[0];
+  const good = AN_GOOD[ind.id];
+  const jud = ch => !good || Math.abs(ch) < 3 ? '' : ((good === 'up') === (ch > 0) ? ' – благоприятно' : ' – неблагоприятно');
+  const chg = (a, b) => a ? (b - a) / Math.abs(a) * 100 : null;
+  let ov = 'От ' + firstY + ' до ' + lastY + ': ' + f(first) + ' → ' + f(last) + ' ' + ind.unit;
+  const c0 = chg(first, last); if (c0 !== null) ov += ' (' + pc(c0) + jud(c0) + ')';
+  if (first > 0 && last > 0 && lastY - firstY >= 3) ov += '; средногодишна промяна ' + pc((Math.pow(last / first, 1 / (lastY - firstY)) - 1) * 100);
+  L.push('<b>Общо:</b> ' + ov + '.');
+  const w = [];
+  [5, 10].forEach(k => { const a = at(lastY - k); if (a !== null && chg(a, last) !== null) w.push('за ' + k + ' г. (' + (lastY - k) + '→' + lastY + ') ' + pc(chg(a, last)) + jud(chg(a, last))); });
+  if (w.length) L.push('<b>Скорошно развитие:</b> ' + w.join('; ') + '.');
+  // тренд в последните до 10 години (OLS)
+  const m = Math.min(10, n), xs = ys.slice(n - m), vs = values.slice(n - m);
+  const mx = xs.reduce((a, b) => a + b, 0) / m, my = vs.reduce((a, b) => a + b, 0) / m;
+  let sxy = 0, sxx = 0, syy = 0; xs.forEach((x, i) => { sxy += (x - mx) * (vs[i] - my); sxx += (x - mx) ** 2; syy += (vs[i] - my) ** 2; });
+  const slope = sxy / sxx, r2 = syy ? sxy * sxy / (sxx * syy) : 0;
+  if (my) {
+    const sp = slope / Math.abs(my) * 100;
+    L.push('<b>Посока през последните ' + m + ' г. (' + xs[0] + '–' + lastY + '):</b> ' + (r2 >= 0.7 ? 'устойчив ' + (slope > 0 ? 'ръст' : 'спад') + ' – средно ' + (slope > 0 ? '+' : '') + f(slope) + ' ' + ind.unit + ' на година (≈ ' + pc(sp) + ' от средното ниво)' + jud(slope > 0 ? 10 : -10) : r2 >= 0.4 ? 'слабо изразена тенденция към ' + (slope > 0 ? 'ръст' : 'спад') + ' с колебания' : 'без ясна посока, стойностите се колебаят') + ' (R² = ' + anNum(r2, 2) + ').');
+  }
+  // плато
+  for (let k = Math.min(6, n); k >= 3; k--) {
+    const seg = values.slice(n - k), mean = seg.reduce((a, b) => a + b, 0) / k;
+    if (mean && seg.every(v => Math.abs(v - mean) / Math.abs(mean) <= 0.03)) { L.push('<b>Плато:</b> през последните ' + k + ' години (' + ys[n - k] + '–' + lastY + ') стойностите са в рамките на ±3% от средното (' + f(mean) + ' ' + ind.unit + ').'); break; }
+  }
+  // обрат
+  if (n >= 8) {
+    const a = chg(values[Math.max(0, n - 10)], values[n - 6]), b = chg(values[n - 6], last);
+    if (a !== null && b !== null && Math.abs(a) >= 5 && Math.abs(b) >= 5 && a * b < 0) L.push('<b>Обрат:</b> преди ' + (lastY - 5) + ' г. посоката е била ' + (a > 0 ? 'нагоре' : 'надолу') + ' (' + pc(a) + '), оттогава е ' + (b > 0 ? 'нагоре' : 'надолу') + ' (' + pc(b) + ').');
+  }
+  // рекорди
+  const mxv = Math.max(...values), mnv = Math.min(...values);
+  if (last === mxv) L.push('<b>Рекорд:</b> ' + lastY + ' е най-високата стойност за целия период.' + jud(10));
+  else if (last === mnv) L.push('<b>Рекорд:</b> ' + lastY + ' е най-ниската стойност за целия период.');
+  // резки скокове
+  const yo = []; for (let i = 1; i < n; i++) if (ys[i] - ys[i - 1] === 1 && values[i - 1]) yo.push({y: ys[i], c: (values[i] - values[i - 1]) / Math.abs(values[i - 1]) * 100});
+  if (yo.length >= 6) {
+    const mu = yo.reduce((a, o) => a + o.c, 0) / yo.length, sd = Math.sqrt(yo.reduce((a, o) => a + (o.c - mu) ** 2, 0) / yo.length);
+    const out = yo.filter(o => sd > 0 && Math.abs(o.c - mu) > 2 * sd && Math.abs(o.c) >= 10);
+    if (out.length) L.push('<b>Необичайни скокове:</b> ' + out.map(o => o.y + ' (' + pc(o.c) + ' спрямо предходната)').join(', ') + ' – проверете за промяна в методиката или еднократно събитие, преди да ги тълкувате като тенденция.');
+  }
+  const gaps = []; for (let i = 1; i < n; i++) if (ys[i] - ys[i - 1] > 1) gaps.push((ys[i - 1] + 1) + (ys[i] - 1 > ys[i - 1] + 1 ? '–' + (ys[i] - 1) : ''));
+  if (gaps.length) L.push('<span style="color:#8a5a00;">Липсват данни за: ' + gaps.join(', ') + ' – линията ги свързва, затова проценти за периоди през тези години са ориентировъчни.</span>');
+  if (ind.unit.indexOf('лв') >= 0) L.push('<span style="color:#666;">Сумите са в номинални стойности – част от ръста се дължи на инфлацията.</span>');
+  anBox('trendAnalysis', L);
+}
+// ── Общи помощни функции за таблични модули (Инфоцентър, БП, БАВ) ──
+function anV(v) { if (v === null || v === undefined || v === '' || v === 'nan') return null; const n = parseFloat(String(v).replace(/,/g, '.')); return isNaN(n) ? null : n; }
+function anIsPct(u) { return (u || '').trim() === '%'; }
+function anFmtVal(v, unit) {
+  if (anIsPct(unit)) return anNum(Math.abs(v) <= 1 ? v * 100 : v, 1) + '%';
+  return anNum(v, Math.abs(v) >= 100 ? 0 : 2);
+}
+function anPP(a, b) { return (Math.abs(a) <= 1 && Math.abs(b) <= 1) ? (b - a) * 100 : b - a; }
+function anShort(s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+function anItemLabel(it) {
+  return '<b>' + (it.code && it.code !== 'nan' ? it.code + ' ' : '') + '</b>' + anShort(it.name, 60) + ' – ' + anFmtVal(it.a, it.unit) + ' → ' + anFmtVal(it.b, it.unit) + (it.unit && !anIsPct(it.unit) ? ' ' + anShort(String(it.unit).split('/')[0].trim(), 12) : '');
+}
+// items: {name, code, unit, a, b, fy, ly, good:'up'|'down'|undefined}
+function anMovers(items, fy, ly, tag) {
+  const L = [];
+  const rel = items.filter(it => !anIsPct(it.unit) && it.a !== null && it.b !== null && it.a !== 0 && it.a * it.b > 0)
+    .map(it => Object.assign({ch: (it.b - it.a) / Math.abs(it.a) * 100}, it));
+  const ups = rel.filter(o => o.ch > 0).sort((x, y) => y.ch - x.ch).slice(0, 5);
+  const dns = rel.filter(o => o.ch < 0).sort((x, y) => x.ch - y.ch).slice(0, 5);
+  const fmt = o => anItemLabel(o) + ' (' + (o.ch > 0 ? '+' : '') + anNum(o.ch, 1) + '%)' + (o.fy !== fy || o.ly !== ly ? ' [' + o.fy + '→' + o.ly + ']' : '');
+  if (ups.length) L.push('<b>Най-голям ръст ' + tag + ':</b> ' + ups.map(fmt).join('; ') + '.');
+  if (dns.length) L.push('<b>Най-голям спад ' + tag + ':</b> ' + dns.map(fmt).join('; ') + '.');
+  const pp = items.filter(it => anIsPct(it.unit) && it.a !== null && it.b !== null).map(it => Object.assign({d: anPP(it.a, it.b)}, it))
+    .filter(o => Math.abs(o.d) >= 1).sort((x, y) => Math.abs(y.d) - Math.abs(x.d)).slice(0, 4);
+  if (pp.length) L.push('<b>Най-голяма промяна в процентни показатели:</b> ' + pp.map(o => anItemLabel(o) + ' (' + (o.d > 0 ? '+' : '') + anNum(o.d, 1) + ' п.п.)').join('; ') + '.');
+  const g = items.filter(it => it.good && it.a !== null && it.b !== null && it.a !== it.b);
+  if (g.length) {
+    const val = it => it.good === 'up' ? it.b > it.a : it.b < it.a;
+    const better = g.filter(val), worse = g.filter(it => !val(it));
+    const sig = it => { const base = Math.abs(it.a) || 1; return Math.abs(it.b - it.a) / base > 0.03; };
+    const w2 = worse.filter(sig);
+    L.push('<b>Показатели с известна посока:</b> ' + better.length + ' се подобряват, ' + worse.length + ' се влошават' + (w2.length ? ' (над 3%): ' + anList(w2.map(it => it.code || it.name), 8) : '') + '.');
+  }
+  return L;
+}
+
+// ── Инфоцентър ──
+function icAnalysis(sheet, rows, visYears) {
+  if (visYears.length < 2 || !visYears.every(y => /^\d{4}$/.test(String(y)))) { anBox('icAnalysis', ['За този лист (или избран период) анализът не се изчислява – няма поне две пълни годишни колони.']); return; }
+  const fy = visYears[0], ly = visYears[visYears.length - 1];
+  const items = [], missLast = [];
+  rows.forEach(r => {
+    const vals = visYears.map(y => anV(r[y]));
+    let i0 = vals.findIndex(v => v !== null), i1 = -1; vals.forEach((v, i) => { if (v !== null) i1 = i; });
+    if (i0 < 0 || i1 <= i0) return;
+    if (vals[vals.length - 1] === null) missLast.push(r.name);
+    const kp = sheet.indexOf('КПИ') === 0 ? KPI.find(k => k.pk === (r.code || r.pk)) : null;
+    items.push({name: anShort(r.name, 55) + (r.section && sheet.indexOf('КПИ') !== 0 ? ' [' + anShort(r.section, 22) + ']' : ''), code: sheet.indexOf('КПИ') === 0 ? (r.code || r.pk) : '', unit: r.unit, a: vals[i0], b: vals[i1], fy: visYears[i0], ly: visYears[i1], good: kp ? kp.posoka : undefined});
+  });
+  const seen = {}; const items2 = items.filter(it => { const k = it.name + '|' + it.a + '|' + it.b + '|' + it.fy + '|' + it.ly; if (seen[k]) return false; seen[k] = 1; return true; });
+  const L = ['<b>Обхват:</b> лист „' + sheet + '“, период ' + fy + '–' + ly + '; ' + items2.length + ' реда с данни за поне две години' + (items2.length < items.length ? ' (без ' + (items.length - items2.length) + ' дублирани стойности)' : '') + '. Сравнява се първата с последната налична стойност в периода (когато годините се различават, са посочени).'];
+  L.push.apply(L, anMovers(items2, fy, ly, 'в периода'));
+  if (missLast.length) L.push('<span style="color:#8a5a00;">Без стойност за ' + ly + ': ' + missLast.length + ' ред(а)' + (missLast.length <= 6 ? ' (' + missLast.map(x => anShort(x, 40)).join('; ') + ')' : '') + ' – при тях сравнението е до последната налична година.</span>');
+  L.push('<span style="color:#666;">Процентите при малки абсолютни стойности са силно преувеличени; ориентирай се по двете стойности, не само по процента. Анализът обхваща редовете, показани в момента (след търсенето).</span>');
+  anBox('icAnalysis', L);
+}
+
+// ── Бизнес план ──
+function bpAnalysis(filtered, isPK) {
+  const years = ['2022', '2023', '2024', '2025', '2026'];
+  const items = [];
+  filtered.forEach(r => {
+    const vals = years.map(y => anV(r[y]));
+    let i0 = vals.findIndex(v => v !== null), i1 = -1; vals.forEach((v, i) => { if (v !== null) i1 = i; });
+    if (i0 < 0 || i1 <= i0) return;
+    const kp = isPK ? KPI.find(k => k.pk === r.pk) : null;
+    items.push({name: anShort(r.name, 50) + (r.group ? ' [' + anShort(r.group.replace('ВС ', 'ВС '), 24) + ']' : ''), code: isPK ? r.pk : r.code, unit: r.unit, a: vals[i0], b: vals[i1], fy: years[i0], ly: years[i1], good: kp ? kp.posoka : undefined, kp, r});
+  });
+  const L = ['<b>Обхват:</b> ' + items.length + ' реда с данни за поне две години (2022–2026), според избраните група и търсене. Сравняват се първата и последната налична стойност в таблицата (за показателите: 2022 и 2026 са плановите стойности, 2023–2025 – отчетените).'];
+  L.push.apply(L, anMovers(items, '2022', '2026', 'в таблицата 2022→2026'));
+  if (isPK) {
+    const gap = [], easy = [], flat = [];
+    items.forEach(it => {
+      if (!it.kp) return;
+      const p26 = anV(it.r['2026']); if (p26 === null || it.kp.bp26 === null || Math.abs(p26 - it.kp.bp26) > 1e-6 * Math.max(1, Math.abs(p26))) return; // само основният ред на показателя
+      const act = it.kp.o25, plan = it.kp.bp26;
+      if (act !== null && act !== undefined && plan !== null && plan !== undefined) {
+        const need = it.kp.posoka === 'up' ? plan - act : act - plan, base = Math.abs(act) || 1;
+        if (need > 0 && need / base > 0.01) gap.push({it, act, plan, pct: need / base * 100});
+        else if (need <= 0) easy.push(it.kp.pk);
+      }
+      if (it.kp.r25 !== null && plan !== null && plan !== undefined) { const st = it.kp.posoka === 'up' ? plan - it.kp.r25 : it.kp.r25 - plan; if (st <= 1e-9) flat.push(it.kp.pk); }
+    });
+    gap.sort((x, y) => y.pct - x.pct);
+    if (gap.length) L.push('<b>План 2026 срещу отчет 2025:</b> за ' + gap.length + ' показателя планът за 2026 е по-труден от постигнатото през 2025 – най-голямо разстояние: ' + gap.slice(0, 5).map(g => '<b>' + g.it.kp.pk + '</b> (отчет 2025 ' + anFmtVal(g.act, g.it.unit) + ' → план 2026 ' + anFmtVal(g.plan, g.it.unit) + ', ' + anNum(g.pct, 1) + '% подобрение)').join('; ') + '. При ' + easy.length + ' показателя отчетът за 2025 вече покрива плана за 2026.');
+    if (flat.length) L.push('<b>Без стъпка на подобрение (план 2026 спрямо план 2025):</b> ' + anList(flat, 10) + ' – планът запазва или влошава нивото.');
+  }
+  L.push('<span style="color:#666;">Анализът обхваща редовете, показани в момента (според групата и търсенето).</span>');
+  anBox('bpAnalysis', L);
+}
+
+// ── IWAD/БАВ ──
+function bavAnalysis(rows) {
+  const items = [], itY = [], newR = [], gone = [];
+  let big = 0, cmp = 0;
+  rows.forEach(r => {
+    const n22 = anV(r.y2022), n24 = anV(r.y2024), n25 = anV(r.y2025);
+    const u = fmtBavUnit(r.unit || '');
+    if (n22 !== null && n25 !== null) items.push({name: r.bg, code: r.code, unit: u, a: n22, b: n25, fy: '2022', ly: '2025'});
+    if (n24 !== null && n25 !== null && n24 !== 0) { cmp++; const ch = (n25 - n24) / Math.abs(n24) * 100; if (Math.abs(ch) > 10) big++; itY.push({name: r.bg, code: r.code, unit: u, a: n24, b: n25, fy: '2024', ly: '2025'}); }
+    if (n25 !== null && n24 === null) newR.push(r.code);
+    if (n24 !== null && n25 === null) gone.push(r.code);
+  });
+  const L = ['<b>Обхват:</b> ' + rows.length + ' показателя според избраните филтри; за ' + items.length + ' има стойности и за 2022, и за 2025.'];
+  if (cmp) L.push('<b>2024→2025:</b> при ' + big + ' от ' + cmp + ' сравними показателя (' + Math.round(big / cmp * 100) + '%) има промяна над 10% (оцветените редове в таблицата).');
+  L.push.apply(L, anMovers(items, '2022', '2025', '2022→2025'));
+  const y = anMovers(itY, '2024', '2025', '2024→2025').filter(x => x.indexOf('Най-голям') >= 0);
+  L.push.apply(L, y);
+  if (newR.length) L.push('<b>Нови през 2025</b> (без стойност за 2024): ' + anList(newR, 10) + '.');
+  if (gone.length) L.push('<span style="color:#8a5a00;">Имат стойност за 2024, но не и за 2025: ' + anList(gone, 10) + ' – проверете дали не липсва подаване.</span>');
+  L.push('<span style="color:#666;">Процентите при малки абсолютни стойности са силно преувеличени. Анализът обхваща редовете, показани в момента.</span>');
+  anBox('bavAnalysis', L);
+}
+// ─── Единен изчислител на коефициент Y (ползва се от калкулатора, ЕПЕ картите и резюмето) ───
+function yEval(pk, year, otchOv) {
+  const d = Y_DATA[pk]; if (!d) return null;
+  const yr = d.years[year]; if (!yr) return null;
+  const bp_prev = yr.bp_prev, bp_curr = yr.bp_curr;
+  const otch = (otchOv !== undefined) ? otchOv : yr.otch;
+  const isUp = d.posoka === 'up';
+  const stepDiff = isUp ? (bp_curr - bp_prev) : (bp_prev - bp_curr);
+  const isZeroOrWorse = stepDiff <= 0.000001;
+  const hasOtch = otch !== null && otch !== undefined;
+  const otchVal = hasOtch ? otch : bp_curr;
+  let ocn = null, pcn = null, pin;
+  if (isZeroOrWorse) {
+    if (!hasOtch) pin = null;
+    else {
+      const meetsBP = isUp ? (otchVal >= bp_curr) : (otchVal <= bp_curr);
+      const ocnRef = isUp ? Math.abs(d.ic2026 - d.base2020) : Math.abs(d.base2020 - d.ic2026);
+      const pcnRef = isUp ? (otchVal - d.base2020) : (d.base2020 - otchVal);
+      pin = meetsBP ? 100 : (ocnRef !== 0 ? (pcnRef / ocnRef * 100) : 0);
+    }
+  } else {
+    ocn = isUp ? (bp_curr - bp_prev) : (bp_prev - bp_curr);
+    pcn = isUp ? (otchVal - bp_prev) : (bp_prev - otchVal);
+    pin = hasOtch && ocn !== 0 ? (pcn / ocn * 100) : (hasOtch ? 100 : null);
+  }
+  let level, levelCls, corr, corrTxt;
+  if (pin === null) { level = 'Няма отчет'; levelCls = 'warn'; corr = null; corrTxt = '—'; }
+  else if (pin >= 75) { level = 'Добро'; levelCls = 'ok'; corr = -0.5; corrTxt = '−0.5% (цена ↑)'; }
+  else if (pin >= 50) { level = 'Средно'; levelCls = 'warn'; corr = 0; corrTxt = '0% (без корекция)'; }
+  else if (pin >= 25) { level = 'Лошо'; levelCls = 'bad'; corr = 0.5; corrTxt = '+0.5% (цена ↓)'; }
+  else { level = 'Пълно неизпълнение'; levelCls = 'vbad'; corr = 1.0; corrTxt = '+1.0% (цена ↓↓)'; }
+  return {pk, d, bp_prev, bp_curr, otch, isUp, isZeroOrWorse, hasOtch, ocn, pcn, pin, level, levelCls, corr, corrTxt};
+}
+// override: {pk: стойност} за проекция; връща {total, hasNull, rows}
+function yTotal(year, override) {
+  let total = 0, hasNull = false; const rows = [];
+  Object.keys(Y_DATA).forEach(pk => {
+    const E = yEval(pk, year, override && override[pk] !== undefined ? override[pk] : undefined);
+    if (!E) return; rows.push(E);
+    if (!E.hasOtch) hasNull = true; if (E.corr !== null) total += E.corr;
+  });
+  return {total, hasNull, rows};
+}
+function anSign(v, d) { return (v > 0 ? '+' : v < 0 ? '−' : '') + anNum(Math.abs(v), d === undefined ? 1 : d) + '%'; }
+
+// ─── Избор на година/месец в основната таблица ───
+const AN_MONTHS = ['Януари', 'Февруари', 'Март', 'Април', 'Май', 'Юни', 'Юли', 'Август', 'Септември', 'Октомври', 'Ноември', 'Декември'];
+function syncYearOptions() {
+  const sel = document.getElementById('yearSelect'), cur = sel.value;
+  const yrs = mode === 'monthly' ? [2024, 2025, 2026] : [2022, 2023, 2024, 2025];
+  sel.innerHTML = yrs.map(y => '<option value="' + y + '">' + y + '</option>').join('');
+  sel.value = yrs.indexOf(parseInt(cur)) >= 0 ? cur : String(yrs[yrs.length - 1]);
+  if (mode === 'monthly') syncMonthOptions();
+}
+function syncMonthOptions() {
+  const yr = parseInt(document.getElementById('yearSelect').value), ds = anDataset(yr) || {};
+  const ms = document.getElementById('monthSelect'), cur = ms.value;
+  ms.innerHTML = AN_MONTHS.map((n, i) => '<option value="' + (i + 1) + '"' + (ds[i + 1] ? '' : ' disabled') + '>' + n + (ds[i + 1] ? '' : ' (няма данни)') + '</option>').join('');
+  const avail = Object.keys(ds).map(Number);
+  ms.value = ds[cur] ? cur : String(Math.max.apply(null, avail));
+}
+function onYearChange() {
+  if (mode === 'monthly') { syncMonthOptions(); onMonthChange(); } else updateView();
+}
+
+// ─── КПИ Dashboard: статус от същия източник като основната таблица ───
+function kdStat(k, y) {
+  const kp = KPI.find(x => x.pk === k.kpi);
+  const pos = kp ? kp.posoka : (k.posoka === 'high' ? 'up' : 'down');
+  return getStatus(k['r' + y], k['o' + y], pos) === 'ok' ? 'Изпълнен' : 'Неизпълнен';
+}
+function kdYear() { const s = document.getElementById('kpiYearSel'); return s ? s.value : '2025'; }
+function kdLabel() {
+  const y = kdYear(), n = KPI_DATA.filter(k => kdStat(k, y) === 'Изпълнен').length;
+  const el = document.getElementById('kpiDonutLabel'); if (el) el.textContent = n + '/' + KPI_DATA.length + ' КПИ изпълнени през ' + y;
+}
+function renderKPIAllTable() {
+  const y = kdYear(), el = document.getElementById('kpiAllTable');
+  let html = '<table style="width:100%;border-collapse:collapse;"><tr style="background:#f5f5f5;"><th style="padding:4px 8px;text-align:left;font-size:11px;">КПИ</th><th style="padding:4px 8px;font-size:11px;color:#e65100;">Разч.' + y + '</th><th style="padding:4px 8px;font-size:11px;color:#1565c0;">Отч.' + y + '</th><th style="padding:4px 8px;font-size:11px;">Статус</th></tr>';
+  KPI_DATA.forEach(k => {
+    const izp = kdStat(k, y) === 'Изпълнен', col = izp ? '#155724' : '#721c24', bg = izp ? '#f0fff4' : '#fff5f5';
+    html += '<tr style="background:' + bg + ';border-bottom:1px solid #eee;"><td style="padding:4px 8px;font-size:11px;font-weight:700;">' + k.kpi + '</td>' +
+      '<td style="padding:4px 8px;font-size:11px;text-align:center;color:#e65100;">' + fmtKPI(k['r' + y], k.me) + '</td>' +
+      '<td style="padding:4px 8px;font-size:11px;text-align:center;color:#1565c0;">' + fmtKPI(k['o' + y], k.me) + '</td>' +
+      '<td style="padding:4px 8px;font-size:11px;font-weight:700;color:' + col + ';text-align:center;">' + (izp ? '✅' : '❌') + '</td></tr>';
+  });
+  el.innerHTML = html + '</table>';
+  kdLabel();
+}
+function kdOnYear() { renderKPIAllTable(); }
+function kdLatestMonth() { const ms = Object.keys(MONTHLY_2026).map(Number); const m = Math.max.apply(null, ms); return {m, md: MONTHLY_2026[m]}; }
+function renderKPIHeat() {
+  const el = document.getElementById('kpiHeat'); if (!el) return;
+  const yrs = [2022, 2023, 2024, 2025], lm = kdLatestMonth();
+  const rows = KPI_DATA.map(k => {
+    const cells = yrs.map(y => kdStat(k, y) === 'Изпълнен' ? 1 : 0);
+    const e = kpiEval(KPI.find(x => x.pk === k.kpi), true, lm.md, 2026);
+    cells.push(e.noData ? null : (e.st === 'ok' ? 1 : 0));
+    return {k, cells, bad: cells.filter(c => c === 0).length};
+  }).sort((a, b) => b.bad - a.bad);
+  const th = 'padding:4px 8px;font-size:11px;text-align:center;';
+  let h = '<table style="width:100%;border-collapse:collapse;font-size:12px;"><tr style="background:#f5f5f5;"><th style="' + th + 'text-align:left;">КПИ</th>' + yrs.map(y => '<th style="' + th + '">' + y + '</th>').join('') + '<th style="' + th + '">2026 (' + lm.md.label.split(' ')[0].toLowerCase() + ')</th><th style="' + th + '">Неизп.</th></tr>';
+  rows.forEach(r => {
+    h += '<tr style="border-bottom:1px solid #eee;"><td style="padding:3px 8px;font-weight:700;" title="' + r.k.desc.replace(/"/g, '') + '">' + r.k.kpi + '</td>' +
+      r.cells.map(c => '<td style="padding:3px 8px;text-align:center;background:' + (c === null ? '#f4f4f4' : c ? '#d4edda' : '#f8d7da') + ';color:' + (c === null ? '#aaa' : c ? '#155724' : '#721c24') + ';font-weight:700;">' + (c === null ? '—' : c ? '✓' : '✗') + '</td>').join('') +
+      '<td style="padding:3px 8px;text-align:center;font-weight:700;">' + r.bad + '</td></tr>';
+  });
+  el.innerHTML = '<div style="background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin-top:16px;"><div style="font-size:13px;font-weight:700;color:#922b21;margin-bottom:4px;">🗓️ Карта на изпълнението по показатели и години</div>' +
+    '<div style="font-size:11px;color:#777;margin-bottom:8px;">Най-проблемните показатели са най-горе. Колоната за 2026 е изпълнението към последния наличен месец (при „кум.“ показателите – спрямо кумулативния план).</div>' +
+    '<div style="max-height:420px;overflow:auto;">' + h + '</table></div></div>';
+}
+function kdAnalysis(k) {
+  const y4 = [2022, 2023, 2024, 2025], L = [];
+  const kp = KPI.find(x => x.pk === k.kpi), pos = kp ? kp.posoka : 'up';
+  const stats = y4.map(y => kdStat(k, y) === 'Изпълнен');
+  const okN = stats.filter(Boolean).length;
+  const okY = y4.filter((y, i) => stats[i]), badY = y4.filter((y, i) => !stats[i]);
+  L.push('<b>' + k.kpi + ':</b> планът е изпълнен в ' + okN + ' от 4 години' + (okY.length ? ' (' + okY.join(', ') + ')' : '') + (badY.length ? '; неизпълнен през ' + badY.join(', ') : '') + '.');
+  const o = y4.map(y => k['o' + y]), f = o.find(v => v !== null && v !== undefined), l = o[3];
+  if (f !== undefined && l !== null && l !== undefined && f !== 0) {
+    const ch = (l - f) / Math.abs(f) * 100, better = pos === 'up' ? ch > 0 : ch < 0;
+    L.push('<b>Отчет 2022→2025:</b> ' + fmtKPI(f, k.me) + ' → ' + fmtKPI(l, k.me) + ' (' + anSign(ch) + (Math.abs(ch) < 1 ? ', практически без промяна' : better ? ', подобрение' : ', влошаване') + ').');
+  }
+  const r25 = k.r2025, o25 = k.o2025;
+  if (r25 !== null && o25 !== null && r25 !== 0) {
+    const w = pos === 'up' ? (r25 - o25) / Math.abs(r25) * 100 : (o25 - r25) / Math.abs(r25) * 100;
+    L.push('<b>2025 спрямо план:</b> ' + (Math.abs(w) < 0.05 ? 'отчетът е равен на плана' : w < 0 ? 'отчетът е по-добър от плана с ' + anNum(-w, 1) + '%' : 'отчетът е по-лош от плана с ' + anNum(w, 1) + '%') + '.');
+  }
+  const lm = kdLatestMonth(), e = kpiEval(kp, true, lm.md, 2026);
+  if (!e.noData && e.worse !== null) L.push('<b>' + lm.md.label + ':</b> ' + (e.st === 'ok' ? 'в плана' : 'под плана с ' + anNum(e.worse, 1) + '%') + (kp && kp.cumulative ? ' (кумулативно от началото на годината)' : '') + '.');
+  anBox('kpiDashAnalysis', L);
+}
+function kdAfter(k) { kdLabel(); kdAnalysis(k); renderKPIHeat(); }
+
+// ─── Резюме за ръководството ───
+function execSummary() {
+  const el = document.getElementById('execSummary'); if (!el) return;
+  const body = document.getElementById('execBody'), L = [];
+  const lm = kdLatestMonth(), md = lm.md, N = KPI.length;
+  const ev = KPI.map(k => kpiEval(k, true, md, 2026)), ok = ev.filter(e => e.st === 'ok').length;
+  let ln = '<b>Изпълнение към ' + md.label + ':</b> ' + ok + ' от ' + N + ' показателя (' + Math.round(ok / N * 100) + '%) са в плана';
+  const md0 = MONTHLY_2025 && MONTHLY_2025[lm.m];
+  if (md0) { const ok0 = KPI.map(k => kpiEval(k, true, md0, 2025)).filter(e => e.st === 'ok').length; ln += '; година по-рано (' + md0.label + ') – ' + ok0 + ' от ' + N + ' (' + (ok - ok0 >= 0 ? '+' : '') + (ok - ok0) + ')'; }
+  L.push(ln + '.');
+  const yc = [2022, 2023, 2024, 2025].map(y => ({y, n: KPI.filter(k => kpiEval(k, false, null, y).st === 'ok').length}));
+  const best = yc.reduce((a, b) => b.n > a.n ? b : a), worst = yc.reduce((a, b) => b.n < a.n ? b : a);
+  L.push('<b>Пълни години:</b> ' + yc.map(o => o.y + ' – ' + o.n + '/' + N).join('; ') + '. Най-добра е ' + best.y + ', най-слаба – ' + worst.y + '.');
+  const big = ev.filter(e => e.st !== 'ok' && e.worse !== null).sort((a, b) => b.worse - a.worse).slice(0, 3);
+  if (big.length) L.push('<b>Най-голямо изоставане към ' + md.label + ':</b> ' + big.map(e => '<b>' + e.kpi.pk + '</b> (' + anNum(e.worse, 1) + '% под плана)').join('; ') + '.');
+  const chronic = KPI.filter(k => [2022, 2023, 2024, 2025].filter(y => kpiEval(k, false, null, y).st !== 'ok').length >= 3).map(k => k.pk);
+  if (chronic.length) L.push('<b>Хронично неизпълнявани</b> (неизпълнени в поне 3 от 4 години): ' + chronic.join(', ') + '.');
+  const ep = ev.filter(e => EPE.indexOf(e.kpi.pk) >= 0), epOk = ep.filter(e => e.st === 'ok').length;
+  const y24 = yTotal(2024), y25 = yTotal(2025), ov = {};
+  Object.keys(Y_DATA).forEach(pk => { const kd = md.kpis[pk]; if (kd && kd.otch !== null && kd.otch !== undefined) ov[pk] = kd.otch; });
+  const y26 = yTotal(2026, ov);
+  let yl = '<b>Коефициент Y:</b> ' + (y24.hasNull ? '' : 'за 2024 – ' + anSign(y24.total) + ' (формира цената за 2026 г.); ') + (y25.hasNull ? '' : 'за 2025 – ' + anSign(y25.total) + ' (за наблюдение)') + '. ' +
+    'ЕПЕ към ' + md.label + ': ' + epOk + ' от ' + ep.length + ' в плана';
+  if (!y26.hasNull) yl += '; ако нивата към ' + md.label + ' се запазят до края на годината, Y за 2026 ≈ ' + anSign(y26.total) + ' (ориентировъчна проекция, не е официален разчет)' + (y26.rows.some(r => r.isZeroOrWorse && r.level === 'Пълно неизпълнение') ? '. Внимание: показателите с нулева стъпка (напр. ПК2а) преминават към „Пълно неизпълнение“ дори при минимално отклонение от плана – проекцията е силно чувствителна' : '');
+  L.push(yl + '.');
+  const miss = [], now = new Date(), cy = now.getFullYear(), cm = now.getMonth(); // cm = 0-базиран; последният приключил месец е cm
+  [2024, 2025, 2026].forEach(y => { const ds = anDataset(y) || {}; const lim = y < cy ? 12 : (y === cy ? cm : 0); for (let m = 1; m <= lim; m++) if (!ds[m]) miss.push(AN_MONTHS[m - 1] + ' ' + y); });
+  const nod = ev.filter(e => e.noData).map(e => e.kpi.pk);
+  L.push('<b>Пълнота на данните:</b> ' + (miss.length ? 'липсват месечни отчети за ' + miss.join(', ') + '. ' : 'няма липсващи месеци. ') + (nod.length ? 'Без отчетена стойност към ' + md.label + ': ' + nod.join(', ') + '.' : 'За всички показатели има отчетена стойност към ' + md.label + '.'));
+  body.innerHTML = L.map(x => '<div style="margin-bottom:6px;">' + x + '</div>').join('') + '<div style="color:#666;font-size:11px;margin-top:6px;">Автоматично изчислено от данните по фиксирани правила (не е мнение на AI). Данни към ' + md.label + '.</div>';
+}
+function execCopy() {
+  const t = document.getElementById('execBody').innerText, msg = document.getElementById('execMsg');
+  const done = ok => { msg.textContent = ok ? 'Копирано.' : 'Не успя копирането – маркирай текста ръчно.'; setTimeout(() => msg.textContent = '', 3000); };
+  try { navigator.clipboard.writeText(t).then(() => done(true), () => done(false)); } catch (e) {
+    try { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done(true); } catch (e2) { done(false); }
+  }
+}
+function execPrint() {
+  document.body.classList.add('print-exec');
+  const off = () => { document.body.classList.remove('print-exec'); window.removeEventListener('afterprint', off); };
+  window.addEventListener('afterprint', off); window.print();
+}
+
 function initTrendDash() {
   const sel = document.getElementById('trendSelect');
   if (sel.options.length > 0) return;
@@ -3165,6 +4055,7 @@ function initTrendDash() {
     sel.appendChild(opt);
   });
   renderTrendDash();
+  initCorr();
 }
 
 function fmtTrend(v, unit) {
@@ -3272,6 +4163,7 @@ function renderTrendDash() {
       }
     }
   });
+  trendAnalysis(ind, years, values);
 }
 
 function toggleKPIDash() {
@@ -3329,7 +4221,7 @@ function renderKPIDash() {
   const years = [{y:'2022',r:'r2022',o:'o2022',s:'s2022'},{y:'2023',r:'r2023',o:'o2023',s:'s2023'},{y:'2024',r:'r2024',o:'o2024',s:'s2024'},{y:'2025',r:'r2025',o:'o2025',s:'s2025'}];
   const cardsEl = document.getElementById('kpiStatusCards');
   cardsEl.innerHTML = years.map(({y,r,o,s}) => {
-    const izp = k[s] === 'Изпълнен';
+    const izp = kdStat(k,y) === 'Изпълнен';
     const bg = izp ? '#d4edda' : '#f8d7da';
     const col = izp ? '#155724' : '#721c24';
     const icon = izp ? '✅' : '❌';
@@ -3338,7 +4230,7 @@ function renderKPIDash() {
       <div style="font-weight:800;font-size:16px;color:${col};">${y}</div>
       <div style="font-size:11px;color:#555;margin-top:4px;">Разч: <b>${fmtKPI(k[r],k.me)}</b></div>
       <div style="font-size:11px;color:#555;">Отч: <b>${fmtKPI(k[o],k.me)}</b></div>
-      <div style="font-size:12px;font-weight:700;color:${col};margin-top:4px;">${k[s]}</div>
+      <div style="font-size:12px;font-weight:700;color:${col};margin-top:4px;">${kdStat(k,y)}</div>
     </div>`;
   }).join('');
 
@@ -3417,8 +4309,8 @@ function renderKPIDash() {
 
   // Стacked horizontal bar — изпълнени vs неизпълнени по години
   const allYears = ['2022','2023','2024','2025'];
-  const izpByYear = allYears.map(y => KPI_DATA.filter(kk => kk['s'+y] === 'Изпълнен').length);
-  const nizpByYear = allYears.map(y => KPI_DATA.filter(kk => kk['s'+y] === 'Неизпълнен').length);
+  const izpByYear = allYears.map(y => KPI_DATA.filter(kk => kdStat(kk,y) === 'Изпълнен').length);
+  const nizpByYear = allYears.map(y => KPI_DATA.filter(kk => kdStat(kk,y) === 'Неизпълнен').length);
 
   if (kpiDonutInst) { kpiDonutInst.destroy(); kpiDonutInst = null; }
   const doCtx = document.getElementById('kpiDonut').getContext('2d');
@@ -3482,27 +4374,9 @@ function renderKPIDash() {
       }
     }]
   });
-  document.getElementById('kpiDonutLabel').textContent = izpByYear[2] + '/30 КПИ изпълнени през 2024';
+  kdAfter(k);
 }
 
-function renderKPIAllTable() {
-  const el = document.getElementById('kpiAllTable');
-  let html = '<table style="width:100%;border-collapse:collapse;">';
-  html += '<tr style="background:#f5f5f5;"><th style="padding:4px 8px;text-align:left;font-size:11px;">КПИ</th><th style="padding:4px 8px;font-size:11px;color:#e65100;">Разч.2025</th><th style="padding:4px 8px;font-size:11px;color:#1565c0;">Отч.2025</th><th style="padding:4px 8px;font-size:11px;">Статус</th></tr>';
-  KPI_DATA.forEach(k => {
-    const izp = k.s2025 === 'Изпълнен';
-    const col = izp ? '#155724' : '#721c24';
-    const bg = izp ? '#f0fff4' : '#fff5f5';
-    html += `<tr style="background:${bg};border-bottom:1px solid #eee;">
-      <td style="padding:4px 8px;font-size:11px;font-weight:700;">${k.kpi}</td>
-      <td style="padding:4px 8px;font-size:11px;text-align:center;color:#e65100;">${fmtKPI(k.r2025,k.me)}</td>
-      <td style="padding:4px 8px;font-size:11px;text-align:center;color:#1565c0;">${fmtKPI(k.o2025,k.me)}</td>
-      <td style="padding:4px 8px;font-size:11px;font-weight:700;color:${col};text-align:center;">${izp?'✅':'❌'}</td>
-    </tr>`;
-  });
-  html += '</table>';
-  el.innerHTML = html;
-}
 
 let bpGroup = 'all';
 
@@ -3580,7 +4454,7 @@ function renderBP() {
     '<th style="padding:7px 10px;text-align:left;white-space:nowrap;min-width:70px;">' + (isPC ? 'ПК' : 'Код') + '</th>' +
     '<th style="padding:7px 10px;text-align:left;">Наименование</th>' +
     '<th style="padding:7px 10px;text-align:center;white-space:nowrap;">МЕ</th>' +
-    years.map(y => '<th style="padding:7px 10px;text-align:right;white-space:nowrap;">' + y + '</th>').join('') +
+    years.map(y => '<th style="padding:7px 10px;text-align:right;white-space:nowrap;">' + y + (isPC ? '<div style="font-size:9px;font-weight:400;opacity:.85;">' + ({2022:'план',2023:'отчет',2024:'отчет',2025:'отчет',2026:'план'})[y] + '</div>' : '') + '</th>').join('') +
     '</tr>';
 
   // Rows - group by group
@@ -3611,6 +4485,7 @@ function renderBP() {
   });
 
   document.getElementById('bpTbody').innerHTML = html;
+  bpAnalysis(filtered, isPC);
 }
 
 // ─── БАВ DATA MODULE ──────────────────────────────────────────
@@ -3773,6 +4648,7 @@ function sortAndRenderBAV() {
   }).join('');
 
   tbody.innerHTML = rows;
+  bavAnalysis(bavFiltered);
 }
 
 function bavQuickQ(q) {
@@ -4055,6 +4931,7 @@ document.addEventListener('click', e => {
 window.onload=()=>{
   try{const k=localStorage.getItem('wb_api_key');if(k)document.getElementById('apiKey').value=k;}catch(e){}
   buildTable();
+  execSummary();
   // Enable IWAD buttons (preloaded data available)
   ['ibtn1','ibtn2','ibtn3','ibtn4','ibtn5','ibtn6'].forEach(b => {
     const el = document.getElementById(b);
