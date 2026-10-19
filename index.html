@@ -251,8 +251,8 @@
         <option value="1">Януари</option><option value="2">Февруари</option>
         <option value="3">Март</option><option value="4">Април</option>
         <option value="5">Май</option><option value="6">Юни</option>
-        <option value="7">Юли</option><option value="8" selected>Август</option>
-        <option value="9">Септември</option><option value="10">Октомври</option>
+        <option value="7">Юли</option><option value="8">Август</option>
+        <option value="9" selected>Септември</option><option value="10">Октомври</option>
         <option value="11">Ноември</option><option value="12">Декември</option>
       </select>
     </div>
@@ -1922,6 +1922,38 @@ const MONTHLY_2026 = {
     "ПК14б":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:1.0},
     "ПК15а":{bp_a:5.31,bp_m:null,otch:5.221661,ic2026:5.2},
     "ПК15б":{bp_a:4.17,bp_m:null,otch:4.597103,ic2026:3.9},
+  }},
+  9: { label:"Септември 2026", kpis: {
+    "ПК1":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:0.99},
+    "ПК2а":{bp_a:0.9994,bp_m:null,otch:0.998862,ic2026:0.99},
+    "ПК2б":{bp_a:0.9846,bp_m:null,otch:0.987705,ic2026:0.98},
+    "ПК2в":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:1.0},
+    "ПК3":{bp_a:1.086,bp_m:null,otch:0.607212,ic2026:8.0},
+    "ПК4а":{bp_a:29.61,bp_m:null,otch:30.269527,ic2026:28.72},
+    "ПК4б":{bp_a:0.3329,bp_m:null,otch:0.329289,ic2026:0.3329},
+    "ПК5":{bp_a:73.24,bp_m:54.93,otch:59.476014,ic2026:73.24},
+    "ПК6a":{bp_a:0.986,bp_m:null,otch:0.995392,ic2026:0.9524},
+    "ПК7а":{bp_a:0.9155,bp_m:null,otch:1.016451,ic2026:0.75},
+    "ПК7б":{bp_a:0.9014,bp_m:null,otch:1.000924,ic2026:0.75},
+    "ПК8":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:0.93},
+    "ПК9":{bp_a:78.56,bp_m:58.92,otch:51.537119,ic2026:85.27},
+    "ПК10":{bp_a:0.093,bp_m:null,otch:0.039396,ic2026:0.5},
+    "ПК11а":{bp_a:0.055,bp_m:null,otch:0.04095,ic2026:0.055},
+    "ПК11б":{bp_a:0.218,bp_m:null,otch:0.212037,ic2026:0.22},
+    "ПК11в":{bp_a:1.0,bp_m:0.75,otch:1.0,ic2026:1.0},
+    "ПК11г":{bp_a:0.0069,bp_m:0.005175,otch:0.00502,ic2026:0.0069},
+    "ПК11д":{bp_a:0.24,bp_m:0.18,otch:0.214773,ic2026:0.0125},
+    "ПК12а":{bp_a:1.57,bp_m:null,otch:null,ic2026:1.1},
+    "ПК12б":{bp_a:2.37,bp_m:null,otch:null,ic2026:1.1},
+    "ПК12в":{bp_a:1.21,bp_m:null,otch:null,ic2026:1.1},
+    "ПК12г":{bp_a:0.8848,bp_m:null,otch:0.866188,ic2026:0.8848},
+    "ПК12д":{bp_a:0.201,bp_m:0.15075,otch:0.165593,ic2026:0.201},
+    "ПК12е":{bp_a:0.8962,bp_m:null,otch:0.907594,ic2026:0.8947},
+    "ПК13":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:1.0},
+    "ПК14а":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:1.0},
+    "ПК14б":{bp_a:1.0,bp_m:null,otch:1.0,ic2026:1.0},
+    "ПК15а":{bp_a:5.31,bp_m:null,otch:5.217055,ic2026:5.2},
+    "ПК15б":{bp_a:4.17,bp_m:null,otch:4.590959,ic2026:3.9},
   }},
 };
 
@@ -4042,7 +4074,7 @@ function execSummary() {
   const y26 = yTotal(2026, ov);
   let yl = '<b>Коефициент Y:</b> ' + (y24.hasNull ? '' : 'за 2024 – ' + anSign(y24.total) + ' (формира цената за 2026 г.); ') + (y25.hasNull ? '' : 'за 2025 – ' + anSign(y25.total) + ' (за наблюдение)') + '. ' +
     'ЕПЕ към ' + md.label + ': ' + epOk + ' от ' + ep.length + ' в рамките на разчета';
-  if (!y26.hasNull) yl += '; ако нивата към ' + md.label + ' се запазят до края на годината, Y за 2026 ≈ ' + anSign(y26.total) + ' (ориентировъчна проекция, не е официален разчет)' + (y26.rows.some(r => r.isZeroOrWorse && r.level === 'Пълно неизпълнение') ? '. Внимание: показателите с нулева стъпка (напр. ПК2а) преминават към „Пълно неизпълнение“ дори при минимално отклонение от плана – проекцията е силно чувствителна' : '');
+  if (!y26.hasNull) yl += '; ако нивата към ' + md.label + ' се запазят до края на годината, Y за 2026 ≈ ' + anSign(y26.total) + ' (ориентировъчна проекция, не е официален разчет)' + (y26.rows.some(r => r.isZeroOrWorse && r.level === 'Пълно неизпълнение') ? '. Внимание: показателите с нулева стъпка (напр. ПК2а) преминават към „Пълно неизпълнение“ дори при минимално отклонение от разчета – проекцията е силно чувствителна' : '');
   L.push(yl + '.');
   const miss = [], now = new Date(), cy = now.getFullYear(), cm = now.getMonth(); // cm = 0-базиран; последният приключил месец е cm
   [2024, 2025, 2026].forEach(y => { const ds = anDataset(y) || {}; const lim = y < cy ? 12 : (y === cy ? cm : 0); for (let m = 1; m <= lim; m++) if (!ds[m]) miss.push(AN_MONTHS[m - 1] + ' ' + y); });
@@ -4980,7 +5012,7 @@ window.onload=()=>{
             <option value="3">Март</option><option value="4">Април</option>
             <option value="5">Май</option><option value="6">Юни</option>
             <option value="7">Юли</option><option value="8">Август</option>
-            <option value="9">Септември</option><option value="10">Октомври</option>
+            <option value="9" selected>Септември</option><option value="10">Октомври</option>
             <option value="11" selected>Ноември</option><option value="12">Декември</option>
           </select>
         </div>
@@ -4996,7 +5028,7 @@ window.onload=()=>{
             <option value="3">Март</option><option value="4">Април</option>
             <option value="5">Май</option><option value="6">Юни</option>
             <option value="7">Юли</option><option value="8">Август</option>
-            <option value="9">Септември</option><option value="10">Октомври</option>
+            <option value="9" selected>Септември</option><option value="10">Октомври</option>
             <option value="11" selected>Ноември</option><option value="12">Декември</option>
           </select>
         </div>
